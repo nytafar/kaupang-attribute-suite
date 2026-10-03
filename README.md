@@ -130,6 +130,20 @@ add_filter('kaupang/attribute-suite/inline_description_animation_duration', func
 
 **Important:** When enabling this feature, remove any existing theme JavaScript that moves or clones the variation description element. The plugin handles everything automatically.
 
+#### Rendering the origin card inline
+
+The product page's origin card, without the dialog (no close button, handle or origin strip, no dialog role), for pages
+of your own. Same template as the modal (`parts/origin-modal.php`), so a theme override covers both.
+
+```php
+// Before wp_head, so the stylesheet lands in <head> (the render enqueues it too, as a fallback).
+kaupang_attribute_suite_enqueue_origin_sheet_assets();
+
+$page = kaupang_attribute_suite_get_attribute_page('belize-maya-mountain');
+echo kaupang_attribute_suite_render_origin_sheet(kaupang_attribute_suite_build_origin_struct($page));
+// → <section class="wc-ras-origin-modal wc-ras-origin-modal--inline" …>
+```
+
 ## 🧩 Hooks and Filters
 
 ### Attribute Page Hooks

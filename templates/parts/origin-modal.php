@@ -26,8 +26,10 @@
  * Theme override path:
  *   {theme}/kaupang-attribute-suite/parts/origin-modal.php
  *
- * Expected variable:
+ * Expected variables:
  *   @var array|null $origin wc_ras_origin struct or null.
+ *   @var bool       $inline Optional. True renders the card inline (see
+ *                           kaupang_attribute_suite_render_origin_sheet()).
  *
  * @package Kaupang\AttributeSuite
  */
@@ -57,11 +59,19 @@ $radar_svg = ($origin && !empty($origin['taste_profile']) && function_exists('ka
 
 $certs = (is_array($origin['certifications'] ?? null)) ? $origin['certifications'] : array();
 
+// Inline (kaupang_attribute_suite_render_origin_sheet()): the same card in the page flow, as a
+// <section> without the dialog chrome (close, handle, origin strip) and without the JS hook.
+$inline   = !empty($inline);
+$title_id = $inline ? 'wc-ras-origin-sheet-title' : 'wc-ras-origin-modal-title';
+
 $hidden_attr = function ($cond) {
     return $cond ? '' : ' hidden';
 };
 ?>
-<dialog class="wc-ras-origin-modal" data-wc-ras-origin-modal aria-labelledby="wc-ras-origin-modal-title">
+<?php if ($inline) : ?>
+<section class="wc-ras-origin-modal wc-ras-origin-modal--inline" aria-labelledby="<?php echo esc_attr($title_id); ?>">
+<?php else : ?>
+<dialog class="wc-ras-origin-modal" data-wc-ras-origin-modal aria-labelledby="<?php echo esc_attr($title_id); ?>">
     <button type="button"
             class="wc-ras-origin-modal__handle"
             data-origin-modal-handle
@@ -74,12 +84,13 @@ $hidden_attr = function ($cond) {
             aria-label="<?php esc_attr_e('Lukk', 'kaupang-attribute-suite'); ?>">
         <span aria-hidden="true">×</span>
     </button>
+<?php endif; ?>
 
     <article class="wc-ras-origin-modal__card" data-origin-modal-card>
         <div class="wc-ras-origin-modal__body">
 
         <header class="wc-ras-origin-modal__hero">
-            <h2 id="wc-ras-origin-modal-title"
+            <h2 id="<?php echo esc_attr($title_id); ?>"
                 class="wc-ras-origin-modal__title"
                 data-field="name"><?php echo esc_html($name); ?></h2>
 
@@ -173,9 +184,13 @@ $hidden_attr = function ($cond) {
 
         </div>
     </article>
+<?php if ($inline) : ?>
+</section>
+<?php else : ?>
 
     <nav class="wc-ras-origin-modal__strip wc-ras-origin-modal__tabs"
          data-origin-modal-strip
          aria-label="<?php esc_attr_e('Opprinnelser', 'kaupang-attribute-suite'); ?>"
          hidden></nav>
 </dialog>
+<?php endif; ?>

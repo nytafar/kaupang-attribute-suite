@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Inline origin card: `kaupang_attribute_suite_render_origin_sheet( array $origin, array $args = [] )` renders the modal's
+  card from the same template as `<section class="wc-ras-origin-modal wc-ras-origin-modal--inline">` (no close, handle,
+  strip or dialog role); `kaupang_attribute_suite_enqueue_origin_sheet_assets()` enqueues its stylesheet
+  (`wc-ras-origin-modal`, now also carrying the `--inline` structure). The product-page modal output is unchanged.
+
 ## [2.1.0] - 2026-10-02
 
 ### Added

@@ -8,6 +8,8 @@
  *     styling — theme owns that in this pass.
  *   - origin-radar.js registration (handle used as dependency by modal).
  *   - Product-page origin-modal enqueue + render hook (fase 3).
+ *   - Public inline render of the same card for other callers
+ *     (kaupang_attribute_suite_render_origin_sheet()).
  *   - Template-include fallback so CPT archive/single use plugin
  *     templates when the theme does not override.
  *
@@ -156,6 +158,48 @@ function kaupang_attribute_suite_origin_modal_initial_origin($product) {
 }
 
 /**
+ * Public: enqueue what an origin card needs, for callers rendering one outside the product page.
+ *
+ * The card's stylesheet (handle `wc-ras-origin-modal`, which also carries the inline variant). No
+ * script: the inline card is static (the radar is server-rendered SVG) and the modal's script only
+ * wires the product page's dialog. Idempotent; loads nothing unless called.
+ */
+function kaupang_attribute_suite_enqueue_origin_sheet_assets() {
+    $css_path = KAUPANG_ATTRIBUTE_SUITE_DIR . 'assets/css/origin-modal.css';
+    $css_ver  = KAUPANG_ATTRIBUTE_SUITE_VERSION . '.' . (file_exists($css_path) ? filemtime($css_path) : 0);
+
+    wp_enqueue_style(
+        'wc-ras-origin-modal',
+        KAUPANG_ATTRIBUTE_SUITE_URL . 'assets/css/origin-modal.css',
+        array(),
+        $css_ver
+    );
+}
+
+/**
+ * Public: the rich origin card inline, without the dialog chrome.
+ *
+ * Same template as the product page's modal (`parts/origin-modal.php`, theme-overridable), rendered
+ * as `<section class="wc-ras-origin-modal wc-ras-origin-modal--inline">`: no close button, handle or
+ * origin strip, no dialog role, not picked up by origin-modal.js. Enqueues the card's stylesheet
+ * (call kaupang_attribute_suite_enqueue_origin_sheet_assets() before wp_head to keep it in <head>).
+ *
+ * @param array $origin wc_ras_origin struct (kaupang_attribute_suite_build_origin_struct()).
+ * @param array $args   Extra variables for a theme's template override.
+ * @return string HTML, or '' for an empty struct.
+ */
+function kaupang_attribute_suite_render_origin_sheet(array $origin, array $args = array()) {
+    if (!$origin) {
+        return '';
+    }
+    kaupang_attribute_suite_enqueue_origin_sheet_assets();
+    return kaupang_attribute_suite_load_template('parts/origin-modal', array_merge($args, array(
+        'origin' => $origin,
+        'inline' => true,
+    )));
+}
+
+/**
  * Register the modal stylesheet + enqueue the modal script on product
  * pages that have pa_opprinnelse variations. Radar JS is pulled in as a
  * dependency, so pages without the modal never pay for either.
@@ -165,17 +209,10 @@ function kaupang_attribute_suite_origin_enqueue_modal_assets() {
         return;
     }
 
-    $css_path = KAUPANG_ATTRIBUTE_SUITE_DIR . 'assets/css/origin-modal.css';
-    $js_path  = KAUPANG_ATTRIBUTE_SUITE_DIR . 'assets/js/origin-modal.js';
-    $css_ver  = KAUPANG_ATTRIBUTE_SUITE_VERSION . '.' . (file_exists($css_path) ? filemtime($css_path) : 0);
-    $js_ver   = KAUPANG_ATTRIBUTE_SUITE_VERSION . '.' . (file_exists($js_path)  ? filemtime($js_path)  : 0);
+    $js_path = KAUPANG_ATTRIBUTE_SUITE_DIR . 'assets/js/origin-modal.js';
+    $js_ver  = KAUPANG_ATTRIBUTE_SUITE_VERSION . '.' . (file_exists($js_path) ? filemtime($js_path) : 0);
 
-    wp_enqueue_style(
-        'wc-ras-origin-modal',
-        KAUPANG_ATTRIBUTE_SUITE_URL . 'assets/css/origin-modal.css',
-        array(),
-        $css_ver
-    );
+    kaupang_attribute_suite_enqueue_origin_sheet_assets();
 
     wp_enqueue_script(
         'wc-ras-origin-modal',

@@ -66,6 +66,22 @@
     display: none;
 }
 
+/* Inline (kaupang_attribute_suite_render_origin_sheet()): the same sheet as
+   a <section> in the page flow, as tall as its content, one column. No
+   close, handle or strip in the markup. position:relative anchors a
+   theme's paper pseudo (the skin's `::before` grain), as the open dialog
+   does. */
+.wc-ras-origin-modal--inline {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-color-selected, #fff);
+}
+
+.wc-ras-origin-modal--inline .wc-ras-origin-modal__body {
+    overflow: visible;
+}
+
 /* ── Handle (phone) / close (desktop) ─────────────────────────── */
 
 .wc-ras-origin-modal__handle {
