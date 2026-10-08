@@ -117,39 +117,106 @@ try {
     $admins = get_users(array('role' => 'administrator', 'number' => 1, 'fields' => 'ID'));
     wp_set_current_user($admins ? (int) $admins[0] : 0);
     $panel = Kaupang_Attribute_Suite_Archived_Variations::instance();
-    $woo_args = array( // WC_AJAX::load_variations()
-        'status'  => array('private', 'publish'),
-        'type'    => 'variation',
-        'parent'  => $parent_id,
-        'limit'   => 15,
-        'page'    => 1,
-        'orderby' => array('menu_order' => 'ASC', 'ID' => 'DESC'),
-        'return'  => 'ids',
-    );
+    $panel->register_admin_hooks(); // is_admin() is false under WP-CLI
+    // Loaded by wp-admin, not WP-CLI; the variation rows need them.
+    require_once WC_ABSPATH . 'includes/admin/wc-admin-functions.php';
+    require_once WC_ABSPATH . 'includes/admin/wc-meta-box-functions.php';
+    $show  = Kaupang_Attribute_Suite_Archived_Variations::SHOW_PARAM;
 
     $count = $panel->filter_variations_count(3, $parent_id);
     $check(2 === $count, "panel count = published only (got {$count}, want 2)");
 
-    $_POST = array('product_id' => $parent_id);
-    $panel->prepare_load_variations();
-    $listed = wc_get_products($woo_args);
-    $check(!in_array($v3->get_id(), $listed, true) && count($listed) === 2, 'load_variations hides the archived variation by default');
-    $again = wc_get_products($woo_args);
-    $check(count($again) === 3, 'narrowing is one-shot: a later identical query sees all 3');
+    // Drive Woo's real AJAX handlers (WC_AJAX::load_variations / bulk_edit_variations): if Woo changes their
+    // queries so the narrowing no longer matches, the assertions below fail. wp_die() is turned into an exception.
+    $ajax = function ($action, array $post) use (&$fail) {
+        $_POST = $_REQUEST = $post;
+        $die   = function () {
+            return function () {
+                throw new RuntimeException('wp_die');
+            };
+        };
+        add_filter('wp_die_ajax_handler', $die, PHP_INT_MAX);
+        add_filter('wp_die_handler', $die, PHP_INT_MAX);
+        $level = ob_get_level();
+        ob_start();
+        try {
+            do_action('wp_ajax_' . $action);
+        } catch (RuntimeException $e) {
+            // wp_die() — the handler finished.
+        } catch (Throwable $e) {
+            $error = $e->getMessage();
+        }
+        $out = '';
+        while (ob_get_level() > $level) {
+            $out = ob_get_clean() . $out;
+        }
+        remove_filter('wp_die_ajax_handler', $die, PHP_INT_MAX);
+        remove_filter('wp_die_handler', $die, PHP_INT_MAX);
+        $_POST = $_REQUEST = array();
+        if (isset($error)) {
+            echo "FAIL {$action} threw: {$error}\n";
+            $fail = 1;
+        }
+        return $out;
+    };
+    $load = function ($show_archived) use ($ajax, $parent_id, $show) {
+        $post = array('security' => wp_create_nonce('load-variations'), 'product_id' => $parent_id, 'per_page' => 15, 'page' => 1);
+        if ($show_archived) {
+            $post[$show] = '1';
+        }
+        preg_match_all('/name="variable_post_id\[\d+\]" value="(\d+)"/', $ajax('woocommerce_load_variations', $post), $m);
+        $ids = array_map('intval', $m[1]);
+        sort($ids);
+        return $ids;
+    };
+    $bulk = function ($action, $show_archived, $data = array()) use ($ajax, $parent_id, $show) {
+        $post = array('security' => wp_create_nonce('bulk-edit-variations'), 'product_id' => $parent_id, 'bulk_action' => $action, 'data' => $data);
+        if ($show_archived) {
+            $post[$show] = '1';
+        }
+        $ajax('woocommerce_bulk_edit_variations', $post);
+    };
+    $status = function ($variation) {
+        clean_post_cache($variation->get_id());
+        return (string) get_post_status($variation->get_id());
+    };
+    $set = function (array $map) {
+        foreach ($map as $s => $variations) {
+            foreach ($variations as $variation) {
+                $variation = wc_get_product($variation->get_id());
+                $variation->set_status($s);
+                $variation->save();
+            }
+        }
+    };
+    $published = array($v1->get_id(), $v2->get_id());
+    sort($published);
+    $all = array_merge($published, array($v3->get_id()));
+    sort($all);
 
-    $_POST = array('product_id' => $parent_id, Kaupang_Attribute_Suite_Archived_Variations::SHOW_PARAM => '1');
-    $panel->prepare_load_variations();
-    $listed = wc_get_products($woo_args);
-    $check(in_array($v3->get_id(), $listed, true) && count($listed) === 3, 'toggle on: load_variations lists the archived variation');
+    $check(has_action('wp_ajax_woocommerce_load_variations', array('WC_AJAX', 'load_variations')) !== false
+        && has_action('wp_ajax_woocommerce_bulk_edit_variations', array('WC_AJAX', 'bulk_edit_variations')) !== false, 'Woo AJAX handlers registered');
+    $check($load(false) === $published, 'load_variations (real handler) hides the archived variation by default');
+    $check($load(true) === $all, 'toggle on: load_variations lists the archived variation');
+    $load(false);
+    $after = wc_get_products(array('type' => 'variation', 'parent' => $parent_id, 'status' => array('private', 'publish'), 'limit' => -1, 'return' => 'ids'));
+    $check(count($after) === 3, 'narrowing is one-shot: a later wc_get_products() in the request sees all 3');
 
-    $_POST = array('product_id' => $parent_id);
-    $panel->prepare_load_variations();
-    $other = wc_get_products(array_merge($woo_args, array('parent' => $parent_id + 999999)));
-    $listed = wc_get_products($woo_args);
-    $check(count($listed) === 2, 'a non-matching query in between does not consume or get the narrowing');
+    $bulk('toggle_enabled', false);
+    $check('private' === $status($v3), 'bulk "Toggle Enabled" with archived hidden leaves the archived variation archived');
+    $check('private' === $status($v1) && 'private' === $status($v2), '…and toggles the listed ones');
+    $set(array('publish' => array($v1, $v2)));
+
+    $bulk('toggle_enabled', true);
+    $check('publish' === $status($v3), 'bulk "Toggle Enabled" with archived shown re-enables it');
+    $set(array('publish' => array($v1, $v2), 'private' => array($v3)));
+
+    $bulk('delete_all', false, array('allowed' => 'true'));
+    $check('private' === $status($v3), 'bulk "Delete all" with archived hidden keeps the archived variation');
+    $check(!get_post($v1->get_id()) && !get_post($v2->get_id()), '…and deletes the listed ones');
     $_POST = array();
 
-    $check(count($fresh()->get_children()) === 3, 'get_children() still returns all 3 (object cache untouched)');
+    $check(array_map('intval', $fresh()->get_children()) === array($v3->get_id()), 'get_children() reflects the survivor (nothing filtered globally)');
 } finally {
     foreach (array_reverse($ids) as $id) {
         wp_delete_post($id, true);

@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`woocommerce_display_product_attributes`). Admin: the Variations panel lists published variations only, with a
   "Vis arkiverte (N)" toggle in its toolbar; scoped to the panel's own `woocommerce_load_variations` request
   (`woocommerce_product_object_query_args`, one-shot), count via `woocommerce_admin_meta_boxes_variations_count`.
+  Bulk actions act on what the panel shows: with archived hidden, "Toggle Enabled" and "Delete all variations" skip
+  them (`woocommerce_bulk_edit_variations` request, one-shot `pre_get_posts`).
   Opt out with `kaupang/attribute-suite/enable_archived_variations`. Check: `tools/check-archived-variations.php`.
 
 ## [2.1.0] - 2026-10-02

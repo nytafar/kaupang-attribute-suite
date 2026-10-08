@@ -11,8 +11,9 @@
  *    that attribute's options. Server-side, so the AJAX variation threshold doesn't matter.
  *  - Admin: the product's Variations panel lists only published variations by default; a toolbar
  *    toggle ("Vis arkiverte (N)") reloads the list with the archived ones so they can be re-enabled.
- *    Scoped to the panel's own `woocommerce_load_variations` request — `wc_get_products()` elsewhere,
- *    bulk actions, REST and the cached `woocommerce_get_children` result are untouched.
+ *    The panel's bulk actions follow what it shows (archived hidden → bulk actions skip them). Scoped to the
+ *    panel's own `woocommerce_load_variations` / `woocommerce_bulk_edit_variations` requests — `wc_get_products()`
+ *    elsewhere, REST and the cached `woocommerce_get_children` result are untouched.
  *
  * Nothing is ever unassigned or deleted: parent attribute terms and their attribute pages stay.
  *
@@ -73,6 +74,7 @@ function kaupang_attribute_suite_archived_variation_allowed_values($product) {
         $meta_key = wc_variation_attribute_name($attribute->get_name());
         $values   = array();
         foreach ($published as $variation_id) {
+            // ponytail: pre-2.4 products stored sanitized slugs for custom attributes; those won't match the text options here.
             $value = (string) get_post_meta($variation_id, $meta_key, true);
             if ('' === $value) {
                 // "Any …" — every option of this attribute stays purchasable.
@@ -157,6 +159,13 @@ class Kaupang_Attribute_Suite_Archived_Variations {
     private $narrow_product_id = 0;
 
     /**
+     * Product ID of the pending bulk_edit_variations narrowing (one-shot), or 0.
+     *
+     * @var int
+     */
+    private $bulk_product_id = 0;
+
+    /**
      * The instance (for tools/check-archived-variations.php and anyone who needs to unhook it).
      *
      * @var self|null
@@ -193,14 +202,20 @@ class Kaupang_Attribute_Suite_Archived_Variations {
         add_filter('woocommerce_dropdown_variation_attribute_options_args', array($this, 'filter_dropdown_args'), 20);
         add_filter('woocommerce_display_product_attributes', array($this, 'filter_product_attributes_table'), 20, 2);
 
-        if (!is_admin()) {
-            return;
+        if (is_admin()) {
+            $this->register_admin_hooks();
         }
+    }
 
-        // Admin: Variations panel.
+    /**
+     * Admin: Variations panel hooks. Public (and idempotent) so the check can drive Woo's real AJAX handlers from WP-CLI.
+     */
+    public function register_admin_hooks() {
         add_filter('woocommerce_admin_meta_boxes_variations_count', array($this, 'filter_variations_count'), 20, 2);
         add_action('woocommerce_variable_product_before_variations', array($this, 'render_toggle'));
+        // Priority 1: before Woo's own handlers (10).
         add_action('wp_ajax_woocommerce_load_variations', array($this, 'prepare_load_variations'), 1);
+        add_action('wp_ajax_woocommerce_bulk_edit_variations', array($this, 'prepare_bulk_edit_variations'), 1);
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_script'), 20); // after Woo registers its variation script
     }
 
@@ -317,9 +332,10 @@ class Kaupang_Attribute_Suite_Archived_Variations {
      */
     public function render_toggle() {
         printf(
+            // Inline display:none, not `hidden`: `.wp-core-ui .button { display: inline-block }` beats the attribute.
             '<button type="button" class="button kaupang-attribute-suite-archived-toggle" data-archived="%1$d" aria-pressed="false"%2$s>%3$s</button>',
             (int) $this->archived_count,
-            $this->archived_count > 0 ? '' : ' hidden',
+            $this->archived_count > 0 ? '' : ' style="display:none"',
             esc_html($this->toggle_label(false, $this->archived_count))
         );
     }
@@ -361,6 +377,39 @@ class Kaupang_Attribute_Suite_Archived_Variations {
         if (!headers_sent()) {
             $counts = kaupang_attribute_suite_variation_status_counts($product_id);
             header(self::COUNT_HEADER . ': ' . $counts['publish'] . ',' . $counts['private']);
+        }
+    }
+
+    /**
+     * Admin AJAX, before Woo's bulk_edit_variations: bulk actions act on what the panel shows. With archived
+     * variations hidden, Woo's child query skips them, so "Toggle Enabled" can't re-publish them and
+     * "Delete all variations" can't delete what is kept for order history.
+     */
+    public function prepare_bulk_edit_variations() {
+        // phpcs:disable WordPress.Security.NonceVerification.Missing -- Woo verifies the nonce in its own handler; this only narrows its query.
+        if (!current_user_can('edit_products') || empty($_POST['product_id']) || !empty($_POST[self::SHOW_PARAM])) {
+            return;
+        }
+        $this->bulk_product_id = absint($_POST['product_id']);
+        // phpcs:enable
+        add_action('pre_get_posts', array($this, 'narrow_bulk_edit_query'));
+    }
+
+    /**
+     * One-shot: only the get_posts() matching Woo's bulk_edit_variations (variations of this parent, publish + private, ids).
+     *
+     * @param WP_Query $query The query.
+     */
+    public function narrow_bulk_edit_query($query) {
+        $status = (array) $query->get('post_status');
+        if ($this->bulk_product_id
+            && 'product_variation' === $query->get('post_type')
+            && (int) $query->get('post_parent') === $this->bulk_product_id
+            && 'ids' === $query->get('fields')
+            && in_array('private', $status, true)) {
+            $query->set('post_status', array_values(array_diff($status, array('private'))));
+            $this->bulk_product_id = 0;
+            remove_action('pre_get_posts', array($this, 'narrow_bulk_edit_query'));
         }
     }
 
