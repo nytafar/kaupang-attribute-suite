@@ -57,8 +57,8 @@ msgid "Edit the rich content page for this attribute term using the block editor
 msgstr "Rediger siden med rikt innhold for denne attributtermen ved hjelp av blokkredigereren."
 
 #: includes/variation-improvements.php:233
-#: includes/variation-improvements.php:239
-#: includes/variation-improvements.php:254
+#: includes/variation-improvements.php:240
+#: includes/variation-improvements.php:255
 msgid "Learn more"
 msgstr "Lær mer"
 
@@ -209,7 +209,7 @@ msgid "All Pages"
 msgstr ""
 
 #. translators: %d: number of producers
-#: includes/frontend-hooks.php:272
+#: includes/frontend-hooks.php:239
 #: templates/single-attribute_page.php:122
 #, php-format
 msgid "%d produsent"
@@ -490,7 +490,7 @@ msgstr ""
 msgid "Altitude range {min, max, unit}."
 msgstr ""
 
-#: includes/origin/origin-render.php:208
+#: includes/origin/origin-render.php:255
 #, php-format
 msgid "%d dag"
 msgid_plural "%d dager"
@@ -679,4 +679,26 @@ msgstr ""
 
 #: templates/single-attribute_page.php:181
 msgid "Smaksnotater"
+msgstr ""
+
+#: includes/archived-variations.php:408
+msgid "Aktivert"
+msgstr ""
+
+#: includes/archived-variations.php:409
+msgid "Arkivert"
+msgstr ""
+
+#. translators: %d: number of archived (disabled) variations
+#: includes/archived-variations.php:423
+#: includes/archived-variations.php:529
+#, php-format
+msgid "Skjul arkiverte (%d)"
+msgstr ""
+
+#. translators: %d: number of archived (disabled) variations
+#: includes/archived-variations.php:425
+#: includes/archived-variations.php:527
+#, php-format
+msgid "Vis arkiverte (%d)"
 msgstr ""

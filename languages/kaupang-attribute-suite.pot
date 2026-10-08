@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Kaupang Attribute Suite 2.2.0\n"
+"Project-Id-Version: Kaupang Attribute Suite 2.3.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/kaupang-attribute-suite\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-08T13:27:09+00:00\n"
+"POT-Creation-Date: 2026-10-08T13:53:45+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: kaupang-attribute-suite\n"
@@ -113,6 +113,28 @@ msgstr ""
 msgid "Description"
 msgstr ""
 
+#: includes/archived-variations.php:408
+msgid "Aktivert"
+msgstr ""
+
+#: includes/archived-variations.php:409
+msgid "Arkivert"
+msgstr ""
+
+#. translators: %d: number of archived (disabled) variations
+#: includes/archived-variations.php:423
+#: includes/archived-variations.php:529
+#, php-format
+msgid "Skjul arkiverte (%d)"
+msgstr ""
+
+#. translators: %d: number of archived (disabled) variations
+#: includes/archived-variations.php:425
+#: includes/archived-variations.php:527
+#, php-format
+msgid "Vis arkiverte (%d)"
+msgstr ""
+
 #: includes/cpt-attribute-page.php:17
 msgctxt "Post type general name"
 msgid "Attribute Pages"
@@ -202,7 +224,7 @@ msgid "Taste profile for the attribute"
 msgstr ""
 
 #. translators: %d: number of producers
-#: includes/frontend-hooks.php:272
+#: includes/frontend-hooks.php:239
 #: templates/single-attribute_page.php:122
 #, php-format
 msgid "%d produsent"
@@ -483,7 +505,7 @@ msgstr ""
 msgid "Altitude range {min, max, unit}."
 msgstr ""
 
-#: includes/origin/origin-render.php:208
+#: includes/origin/origin-render.php:255
 #, php-format
 msgid "%d dag"
 msgid_plural "%d dager"
@@ -600,8 +622,8 @@ msgid "Lær mer"
 msgstr ""
 
 #: includes/variation-improvements.php:233
-#: includes/variation-improvements.php:239
-#: includes/variation-improvements.php:254
+#: includes/variation-improvements.php:240
+#: includes/variation-improvements.php:255
 msgid "Learn more"
 msgstr ""
 

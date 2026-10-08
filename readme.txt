@@ -3,7 +3,7 @@ Contributors: lassejellum
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.2.0
+Stable tag: 2.3.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,48 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 4. Edit an attribute term to access its rich content page
 
 == Changelog ==
+
+= 2.3.0 – 2026-10-08 =
+
+**Added**
+* Archived variations (`includes/archived-variations.php`): a disabled (`private`) variation is archived — kept for order
+  history and re-enable-able, nothing unassigned or deleted. Storefront: attribute options only archived variations use
+  are no longer offered (`woocommerce_dropdown_variation_attribute_options_args`, so the native select and Ousia's tiles
+  alike; a published "any" variation keeps them all) and drop out of the "Additional information" table
+  (`woocommerce_display_product_attributes`). Admin: the Variations panel lists published variations only, with a
+  "Vis arkiverte (N)" toggle in its toolbar; scoped to the panel's own `woocommerce_load_variations` request
+  (`woocommerce_product_object_query_args`, one-shot), count via `woocommerce_admin_meta_boxes_variations_count`.
+  Bulk actions act on what the panel shows: with archived hidden, "Toggle Enabled" and "Delete all variations" skip
+  them (`woocommerce_bulk_edit_variations` request, one-shot `pre_get_posts`).
+  Attribute term archives (`/opprinnelse/<slug>/`) list only products active for the term — a variable product needs
+  a published variation with the term or "any" (`posts_where` on the main query; pagination agrees); the term page
+  stays even with no products. Each collapsed variation row shows an "Aktivert" checkbox mirroring Woo's own
+  `variable_enabled` field; unticked/archived rows are muted and labelled "Arkivert".
+  Opt out with `kaupang/attribute-suite/enable_archived_variations`. Check: `tools/check-archived-variations.php`.
+
+**Changed**
+* **Attribute term archives follow WooCommerce's per-attribute "Enable archives"** (Products → Attributes,
+  `attribute_public`). The suite no longer forces every `pa_*` taxonomy public with a rewrite
+  (`kaupang_attribute_suite_enable_attribute_archives` / `kaupang_attribute_suite_filter_attribute_taxonomy_args`
+  removed). With archives off: no rewrite rules, the taxonomy isn't public, and the MnM "Learn more" fallback
+  (`kaupang_attribute_suite_get_learn_more_url()`) returns `''` instead of an archive URL, so no link is printed.
+  Rich pages (`/opprinnelser/<slug>/`), origin cards/modal, the variation description fallback, GTIN links, origin
+  counts and archived variations don't depend on it. **Deploy:** tick "Enable archives" on the attributes that should
+  keep term archive pages (myrvann.no: Opprinnelse) before or with this version, or `/opprinnelse/<slug>/` stops resolving. Rules are flushed on the first request after the version bump; deploying without one needs `wp rewrite flush`.
+  Check: `tools/check-attribute-archives.php` (read-only).
+
+**Fixed**
+* Rewrite rules after activation could miss the plugin's rules: the flush flag was cleared at `init` 99 while
+  `flush_rewrite_rules()` only queues itself for `wp_loaded`, so a request exiting in between lost it for good (on
+  nyta.no the first PHP hit after activating was Jetpack's dedicated sync request, which exits at `init` 200). The
+  flush now runs on `wp_loaded` and clears the flag after writing. Deactivation empties `rewrite_rules` instead of
+  flushing in a request that still has the plugin's rules registered (which rewrote them unchanged). Adding, editing
+  or deleting an attribute queues the same flush, so toggling "Enable archives" applies on the next request rather
+  than at Woo's WP-Cron flush.
+* `tools/check-archived-variations.php` builds its term-archive queries with `tax_query`, so it runs with archives off.
+* `kaupang_attribute_suite_origin_product_count()` returned 0 with Scalability Pro active (it strips
+  `SQL_CALC_FOUND_ROWS`); it now counts IDs, matches the origin archive's list, and is cleared when a product or
+  variation changes status, is deleted or saved, or its origin terms change.
 
 = 2.2.0 – 2026-10-08 =
 

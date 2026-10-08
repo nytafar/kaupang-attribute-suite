@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-08
+
 ### Added
 - Archived variations (`includes/archived-variations.php`): a disabled (`private`) variation is archived — kept for order
   history and re-enable-able, nothing unassigned or deleted. Storefront: attribute options only archived variations use
