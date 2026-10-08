@@ -15,7 +15,7 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 - **Block Editor Support**: Full Gutenberg editing for each attribute term
 - **Automatic Content Linkage**: CPT attribute_page automatically matches attribute terms by slug
 - **Meta Fields per Term**: Add native fields like region, smak, etc., stored in the CPT
-- **Archive Override**: Attribute archives (e.g., `/opprinnelse/colombia-betulia/`) display the matching CPT
+- **Rich Pages**: Each term's matching CPT renders at `/opprinnelser/<slug>/`
 - **Admin UX Integration**: Link from term edit screen to its content page, list meta in CPT admin list
 - **Translatable**: Fully compatible with WPML/Polylang, matches content by slug per language
 - **Variation-level Access**: Fetch region/smak on a product variation using linked attribute page
@@ -23,7 +23,7 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 - **Variation Description Fallback**: Automatically use attribute term descriptions when variation descriptions are empty
 - **Mix and Match Support**: Extends description fallback to WooCommerce Mix and Match products
 - **Inline Variation Description**: Render descriptions directly in the variations table, eliminating CLS and DOM manipulation issues
-- **Public Attribute Archives**: Automatically enables public archives for all product attribute taxonomies
+- **Attribute Term Archives follow WooCommerce**: an attribute's term archives (e.g. `/opprinnelse/<slug>/`) exist only when "Enable archives" is ticked on it (Products → Attributes); with it off there are no rewrite rules and no links to them. Rewrite rules are rebuilt on the next request after activation, deactivation, a version bump or an attribute change. Check: `tools/check-attribute-archives.php`
 - **Term List Enhancements**: Description and Rich Content columns in attribute term list tables
 - **Quick Edit Description**: Edit term descriptions directly from the term list using Quick Edit
 
@@ -35,14 +35,14 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 | Content Storage | post_content + native post_meta |
 | Performance | Object cache integration for all lookups |
 | Editing UI | Block editor + meta box or custom fields |
-| URL structure | Uses native attribute term archive URLs |
+| URL structure | Rich pages at `/opprinnelser/<slug>/`; WooCommerce term archives only where "Enable archives" is on |
 | Extendability | Developers can register new meta fields or templates via hooks |
 
 ## Installation
 
 1. Upload the `kaupang-attribute-suite` folder to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Navigate to Products → Attributes and ensure you have at least one attribute with "Enable archives" checked
+3. Optional: in Products → Attributes, tick "Enable archives" on an attribute that should have term archive pages (e.g. `/opprinnelse/<slug>/`)
 4. Edit an attribute term to access its rich content page
 
 ## 📋 Requirements

@@ -72,7 +72,7 @@ add_action('init', function () {
 // Plugin activation hook
 register_activation_hook(__FILE__, 'kaupang_attribute_suite_activate');
 function kaupang_attribute_suite_activate() {
-    // Schedule rewrite rules flush for next init
+    // Flush on the next request: this one loaded before the plugin, so none of its rules are registered yet.
     update_option('kaupang_attribute_suite_flush_rewrite_rules', true);
     // Orphaned rows from the pre-rename plugin (woocommerce-rich-attribute-suite).
     delete_option('wc_ras_rewrite_version');
@@ -82,6 +82,7 @@ function kaupang_attribute_suite_activate() {
 // Plugin deactivation hook
 register_deactivation_hook(__FILE__, 'kaupang_attribute_suite_deactivate');
 function kaupang_attribute_suite_deactivate() {
-    // Flush rewrite rules on deactivation
-    flush_rewrite_rules();
+    // Not flush_rewrite_rules(): this request still has our CPT, taxonomies and /01/ rule registered, so a flush here
+    // rewrote the same rules. Emptied, WP rebuilds them on the next request, without this plugin.
+    delete_option('rewrite_rules');
 }

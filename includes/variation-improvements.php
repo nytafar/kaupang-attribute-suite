@@ -234,8 +234,9 @@ class Kaupang_Attribute_Suite_Variation_Improvements {
                             
                             $term_page_links[] = '<a href="' . esc_url($link_url) . '" class="term-page-link">' . esc_html($link_text) . '</a>';
                         } else {
-                            // Default to term archive link
-                            $term_page_links[] = '<a href="' . esc_url(kaupang_attribute_suite_get_learn_more_url($term)) . '" class="term-page-link">' .
+                            // Rich page, else term archive; '' keeps the index paired with its description.
+                            $learn_more = kaupang_attribute_suite_get_learn_more_url($term);
+                            $term_page_links[] = $learn_more === '' ? '' : '<a href="' . esc_url($learn_more) . '" class="term-page-link">' .
                                                  esc_html__('Learn more', 'kaupang-attribute-suite') . '</a>';
                         }
                     } else {
@@ -273,9 +274,9 @@ class Kaupang_Attribute_Suite_Variation_Improvements {
                     $variation_description = '<p>' . implode('</p><p>', $term_descriptions) . '</p>';
                     
                     // Add all links if showing links is enabled
-                    if (apply_filters('kaupang/attribute-suite/show_variation_description_links', true) && !empty($term_page_links)) {
+                    if (apply_filters('kaupang/attribute-suite/show_variation_description_links', true) && array_filter($term_page_links)) {
                         $variation_description .= '<p class="term-page-link-wrapper">' . 
-                                                 implode(' | ', $term_page_links) . '</p>';
+                                                 implode(' | ', array_filter($term_page_links)) . '</p>';
                     }
                 }
             }
@@ -297,7 +298,8 @@ new Kaupang_Attribute_Suite_Variation_Improvements();
  * Resolve the canonical "Learn more" URL for an attribute term.
  *
  * Priority: attribute_page CPT permalink (canonical as of 1.3.0), with
- * graceful fallback to the term archive if no matching CPT exists yet.
+ * graceful fallback to the term archive if no matching CPT exists yet —
+ * only when the attribute has "Enable archives" on; otherwise '' (no link).
  *
  * @param WP_Term $term
  * @return string
@@ -312,5 +314,5 @@ function kaupang_attribute_suite_get_learn_more_url($term) {
     if ($page) {
         return (string) get_permalink($page);
     }
-    return (string) get_term_link($term);
+    return is_taxonomy_viewable($term->taxonomy) ? (string) get_term_link($term) : '';
 }

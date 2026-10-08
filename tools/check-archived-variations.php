@@ -135,7 +135,8 @@ try {
             $query->set('post_status', $statuses);
         };
         add_action('pre_get_posts', $status, PHP_INT_MAX);
-        $found = $wp_query->query(array($taxonomy => $slug, 'post_type' => 'product', 'fields' => 'ids', 'posts_per_page' => -1));
+        // tax_query, not the `pa_*` query var: that only exists while the attribute has "Enable archives" on.
+        $found = $wp_query->query(array('tax_query' => array(array('taxonomy' => $taxonomy, 'field' => 'slug', 'terms' => $slug)), 'post_type' => 'product', 'fields' => 'ids', 'posts_per_page' => -1));
         remove_action('pre_get_posts', $status, PHP_INT_MAX);
         list($wp_the_query, $wp_query) = $saved;
         return array_map('intval', $found);

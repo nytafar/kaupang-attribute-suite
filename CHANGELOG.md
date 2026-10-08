@@ -27,7 +27,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `variable_enabled` field; unticked/archived rows are muted and labelled "Arkivert".
   Opt out with `kaupang/attribute-suite/enable_archived_variations`. Check: `tools/check-archived-variations.php`.
 
+### Changed
+- **Attribute term archives follow WooCommerce's per-attribute "Enable archives"** (Products → Attributes,
+  `attribute_public`). The suite no longer forces every `pa_*` taxonomy public with a rewrite
+  (`kaupang_attribute_suite_enable_attribute_archives` / `kaupang_attribute_suite_filter_attribute_taxonomy_args`
+  removed). With archives off: no rewrite rules, the taxonomy isn't public, and the MnM "Learn more" fallback
+  (`kaupang_attribute_suite_get_learn_more_url()`) returns `''` instead of an archive URL, so no link is printed.
+  Rich pages (`/opprinnelser/<slug>/`), origin cards/modal, the variation description fallback, GTIN links, origin
+  counts and archived variations don't depend on it. **Deploy:** tick "Enable archives" on the attributes that should
+  keep term archive pages (myrvann.no: Opprinnelse) before or with this version, or `/opprinnelse/<slug>/` 404s.
+  Check: `tools/check-attribute-archives.php` (read-only).
+
 ### Fixed
+- Rewrite rules after activation could miss the plugin's rules: the flush flag was cleared at `init` 99 while
+  `flush_rewrite_rules()` only queues itself for `wp_loaded`, so a request exiting in between lost it for good (on
+  nyta.no the first PHP hit after activating was Jetpack's dedicated sync request, which exits at `init` 200). The
+  flush now runs on `wp_loaded` and clears the flag after writing. Deactivation empties `rewrite_rules` instead of
+  flushing in a request that still has the plugin's rules registered (which rewrote them unchanged). Adding, editing
+  or deleting an attribute queues the same flush, so toggling "Enable archives" applies on the next request rather
+  than at Woo's WP-Cron flush.
+- `tools/check-archived-variations.php` builds its term-archive queries with `tax_query`, so it runs with archives off.
 - `kaupang_attribute_suite_origin_product_count()` returned 0 with Scalability Pro active (it strips
   `SQL_CALC_FOUND_ROWS`); it now counts IDs, matches the origin archive's list, and is cleared when a product or
   variation changes status, is deleted or saved, or its origin terms change.

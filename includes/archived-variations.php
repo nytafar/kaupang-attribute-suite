@@ -345,7 +345,7 @@ class Kaupang_Attribute_Suite_Archived_Variations {
     }
 
     /**
-     * Storefront attribute term archives (`/opprinnelse/<slug>/`) list only products active for the term, and so does
+     * Storefront attribute term archives (`/opprinnelse/<slug>/`, where Woo's "Enable archives" is on) list only products active for the term, and so does
      * any query passing `kaupang_attribute_suite_active_term => [taxonomy, slug]` (the origin product count).
      * In the WHERE clause, so pagination and found_posts agree with the list. The term page itself always stays.
      *

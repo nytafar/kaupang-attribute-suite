@@ -19,7 +19,7 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 
 1. Upload the `kaupang-attribute-suite` folder to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Navigate to Products → Attributes and ensure you have at least one attribute with "Enable archives" checked
+3. Optional: in Products → Attributes, tick "Enable archives" on an attribute that should have term archive pages (e.g. `/opprinnelse/<slug>/`)
 4. Edit an attribute term to access its rich content page
 
 == Changelog ==
