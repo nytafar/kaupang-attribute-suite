@@ -7,13 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.2.0] - 2026-10-08
-
 ### Added
-- Inline origin card: `kaupang_attribute_suite_render_origin_sheet( array $origin, array $args = [] )` renders the modal's
-  card from the same template as `<section class="wc-ras-origin-modal wc-ras-origin-modal--inline">` (no close, handle,
-  strip or dialog role); `kaupang_attribute_suite_enqueue_origin_sheet_assets()` enqueues its stylesheet
-  (`wc-ras-origin-modal`, now also carrying the `--inline` structure). The product-page modal output is unchanged.
 - Archived variations (`includes/archived-variations.php`): a disabled (`private`) variation is archived — kept for order
   history and re-enable-able, nothing unassigned or deleted. Storefront: attribute options only archived variations use
   are no longer offered (`woocommerce_dropdown_variation_attribute_options_args`, so the native select and Ousia's tiles
@@ -52,6 +46,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `kaupang_attribute_suite_origin_product_count()` returned 0 with Scalability Pro active (it strips
   `SQL_CALC_FOUND_ROWS`); it now counts IDs, matches the origin archive's list, and is cleared when a product or
   variation changes status, is deleted or saved, or its origin terms change.
+
+## [2.2.0] - 2026-10-08
+
+### Added
+- Inline origin card: `kaupang_attribute_suite_render_origin_sheet( array $origin, array $args = [] )` renders the modal's
+  card from the same template as `<section class="wc-ras-origin-modal wc-ras-origin-modal--inline">` (no close, handle,
+  strip or dialog role); `kaupang_attribute_suite_enqueue_origin_sheet_assets()` enqueues its stylesheet
+  (`wc-ras-origin-modal`, now also carrying the `--inline` structure). The product-page modal output is unchanged.
 
 ## [2.1.0] - 2026-10-02
 
