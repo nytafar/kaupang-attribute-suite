@@ -156,6 +156,40 @@ try {
         $check($listed === $counted, "origin {$origin->slug}: count {$counted} = archive {$listed}");
     }
 
+    // Count cache follows a deletion without a manual flush. Needs a *published* product (the count is publish-only):
+    // catalog-hidden, on an origin with no products, alive for a moment only.
+    $origin_slug = 'peru-nativo-blanco';
+    $origin_term = get_term_by('slug', $origin_slug, 'pa_opprinnelse');
+    $baseline    = $origin_term ? kaupang_attribute_suite_origin_product_count($origin_slug) : -1;
+    if ($origin_term && 0 === $baseline) {
+        $live = new WC_Product_Variable();
+        $live->set_name('kaupang check-archived-variations count fixture');
+        $live->set_catalog_visibility('hidden');
+        $origin_attr = new WC_Product_Attribute();
+        $origin_attr->set_id(wc_attribute_taxonomy_id_by_name('pa_opprinnelse'));
+        $origin_attr->set_name('pa_opprinnelse');
+        $origin_attr->set_options(array($origin_term->term_id));
+        $origin_attr->set_variation(true);
+        $live->set_attributes(array($origin_attr));
+        $live->set_status('draft');
+        $ids[] = $live_id = $live->save();
+        $only  = new WC_Product_Variation();
+        $only->set_parent_id($live_id);
+        $only->set_attributes(array('pa_opprinnelse' => $origin_slug));
+        $only->set_regular_price('10');
+        $ids[] = $only->save();
+        $live = wc_get_product($live_id);
+        $live->set_status('publish');
+        $live->save();
+        $before = kaupang_attribute_suite_origin_product_count($origin_slug); // caches 1
+        $only->delete(true);
+        $after = kaupang_attribute_suite_origin_product_count($origin_slug);
+        wp_delete_post($live_id, true);
+        $check(1 === $before && 0 === $after, "origin count drops when its only published variation is deleted ({$before} → {$after}, no manual flush)");
+    } else {
+        $check(false, "count-cache fixture needs pa_opprinnelse '{$origin_slug}' with 0 products (got {$baseline})");
+    }
+
     // 4. Admin panel query: published only by default, archived on the toggle, nothing else narrowed.
     $admins = get_users(array('role' => 'administrator', 'number' => 1, 'fields' => 'ID'));
     wp_set_current_user($admins ? (int) $admins[0] : 0);

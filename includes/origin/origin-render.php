@@ -85,7 +85,7 @@ function kaupang_attribute_suite_format_altitude($altitude) {
 /**
  * Count published products active for a given opprinnelse term slug — the same set its term archive lists
  * (a variable product needs a published variation with the term; see archived-variations.php).
- * Cached for 1 hour per slug; a variation changing status clears its parent's origins.
+ * Cached for 1 hour per slug; cleared by kaupang_attribute_suite_flush_origin_counts() on product/variation changes.
  *
  * @param string $slug pa_opprinnelse term slug.
  * @return int
@@ -128,21 +128,48 @@ function kaupang_attribute_suite_origin_product_count($slug) {
 }
 
 /**
- * Archiving or re-enabling a variation changes which origins its parent counts for.
+ * Clear cached origin counts for a product (or a variation's parent), or for the given slugs.
  *
- * @param string  $new_status New status.
- * @param string  $old_status Old status.
- * @param WP_Post $post       The post.
+ * @param int        $post_id Product or variation ID.
+ * @param array|null $slugs   pa_opprinnelse slugs; default: the product's current ones.
  */
-function kaupang_attribute_suite_origin_count_on_variation_status($new_status, $old_status, $post) {
-    if ('product_variation' !== $post->post_type || $new_status === $old_status || !$post->post_parent) {
-        return;
+function kaupang_attribute_suite_flush_origin_counts($post_id, $slugs = null) {
+    $parent = wp_get_post_parent_id($post_id);
+    if (null === $slugs) {
+        $slugs = wc_get_product_terms($parent ? $parent : $post_id, 'pa_opprinnelse', array('fields' => 'slugs'));
     }
-    foreach (wc_get_product_terms($post->post_parent, 'pa_opprinnelse', array('fields' => 'slugs')) as $slug) {
+    foreach ((array) $slugs as $slug) {
         wp_cache_delete('origin_active_product_count_' . md5($slug), 'kaupang_attribute_suite_origin');
     }
 }
-add_action('transition_post_status', 'kaupang_attribute_suite_origin_count_on_variation_status', 10, 3);
+
+// Anything that changes which products an origin counts: status (incl. trash/untrash), deletion, a variation's
+// attributes, the parent's save (type), and its origin terms (old and new).
+add_action('transition_post_status', function ($new_status, $old_status, $post) {
+    if ($new_status !== $old_status && in_array($post->post_type, array('product', 'product_variation'), true)) {
+        kaupang_attribute_suite_flush_origin_counts($post->ID);
+    }
+}, 10, 3);
+add_action('before_delete_post', function ($post_id, $post) {
+    if (in_array($post->post_type, array('product', 'product_variation'), true)) {
+        kaupang_attribute_suite_flush_origin_counts($post_id);
+    }
+}, 10, 2);
+add_action('woocommerce_update_product_variation', 'kaupang_attribute_suite_flush_origin_counts');
+add_action('woocommerce_update_product', 'kaupang_attribute_suite_flush_origin_counts');
+add_action('set_object_terms', function ($object_id, $terms, $tt_ids, $taxonomy, $append, $old_tt_ids) {
+    if ('pa_opprinnelse' !== $taxonomy) {
+        return;
+    }
+    $slugs = array();
+    foreach (array_unique(array_merge((array) $tt_ids, (array) $old_tt_ids)) as $tt_id) {
+        $term = get_term_by('term_taxonomy_id', (int) $tt_id, 'pa_opprinnelse');
+        if ($term) {
+            $slugs[] = $term->slug;
+        }
+    }
+    kaupang_attribute_suite_flush_origin_counts($object_id, $slugs);
+}, 10, 6);
 
 /**
  * Inline SVG glyph by key. Returns a string safe to echo in templates.

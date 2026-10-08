@@ -124,6 +124,7 @@ function kaupang_attribute_suite_filter_archived_variation_options($options, $pr
 function kaupang_attribute_suite_active_for_term_where($taxonomy, $slug) {
     global $wpdb;
 
+    // ponytail: only the core `variable` type is filtered; variable subscriptions / MnM etc. are listed as today.
     $variable = get_term_by('slug', 'variable', 'product_type');
     if (!$variable) {
         return '';
