@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`kaupang_attribute_suite_get_learn_more_url()`) returns `''` instead of an archive URL, so no link is printed.
   Rich pages (`/opprinnelser/<slug>/`), origin cards/modal, the variation description fallback, GTIN links, origin
   counts and archived variations don't depend on it. **Deploy:** tick "Enable archives" on the attributes that should
-  keep term archive pages (myrvann.no: Opprinnelse) before or with this version, or `/opprinnelse/<slug>/` 404s.
+  keep term archive pages (myrvann.no: Opprinnelse) before or with this version, or `/opprinnelse/<slug>/` stops resolving. Rules are flushed on the first request after the version bump; deploying without one needs `wp rewrite flush`.
   Check: `tools/check-attribute-archives.php` (read-only).
 
 ### Fixed
