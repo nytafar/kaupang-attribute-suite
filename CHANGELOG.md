@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-08
+
 ### Added
 - Inline origin card: `kaupang_attribute_suite_render_origin_sheet( array $origin, array $args = [] )` renders the modal's
   card from the same template as `<section class="wc-ras-origin-modal wc-ras-origin-modal--inline">` (no close, handle,

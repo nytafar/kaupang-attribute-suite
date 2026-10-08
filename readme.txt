@@ -3,7 +3,7 @@ Contributors: lassejellum
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,14 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 4. Edit an attribute term to access its rich content page
 
 == Changelog ==
+
+= 2.2.0 – 2026-10-08 =
+
+**Added**
+* Inline origin card: `kaupang_attribute_suite_render_origin_sheet( array $origin, array $args = [] )` renders the modal's
+  card from the same template as `<section class="wc-ras-origin-modal wc-ras-origin-modal--inline">` (no close, handle,
+  strip or dialog role); `kaupang_attribute_suite_enqueue_origin_sheet_assets()` enqueues its stylesheet
+  (`wc-ras-origin-modal`, now also carrying the `--inline` structure). The product-page modal output is unchanged.
 
 = 2.1.0 – 2026-10-02 =
 

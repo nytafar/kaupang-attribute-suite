@@ -3,7 +3,7 @@
  * Plugin Name: Kaupang Attribute Suite
  * Plugin URI:  https://github.com/nytafar/kaupang-attribute-suite
  * Description: Enhance WooCommerce product attribute taxonomy pages with rich, translatable, and fully editable content using native WordPress tools.
- * Version:     2.1.0
+ * Version:     2.2.0
  * Author:      Lasse Jellum
  * Author URI:  https://jellum.net
  * Text Domain: kaupang-attribute-suite
@@ -21,7 +21,7 @@
 defined('ABSPATH') || exit;
 
 // Define plugin constants
-define('KAUPANG_ATTRIBUTE_SUITE_VERSION', '2.1.0');
+define('KAUPANG_ATTRIBUTE_SUITE_VERSION', '2.2.0');
 define('KAUPANG_ATTRIBUTE_SUITE_FILE', __FILE__);
 define('KAUPANG_ATTRIBUTE_SUITE_DIR', plugin_dir_path(__FILE__));
 define('KAUPANG_ATTRIBUTE_SUITE_URL', plugin_dir_url(__FILE__));

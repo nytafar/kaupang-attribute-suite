@@ -114,7 +114,7 @@ msgstr "Attributtside"
 
 #: includes/admin-hooks.php:93
 #: includes/admin-hooks.php:190
-#: templates/parts/origin-modal.php:114
+#: templates/parts/origin-modal.php:125
 msgid "Region"
 msgstr "Region"
 
@@ -626,42 +626,42 @@ msgid_plural "Brukes i %d sjokolader"
 msgstr[0] ""
 msgstr[1] ""
 
-#: templates/parts/origin-modal.php:69
-#: templates/parts/origin-modal.php:74
+#: templates/parts/origin-modal.php:79
+#: templates/parts/origin-modal.php:84
 msgid "Lukk"
 msgstr ""
 
-#: templates/parts/origin-modal.php:119
+#: templates/parts/origin-modal.php:130
 msgid "Varietet"
 msgstr ""
 
-#: templates/parts/origin-modal.php:124
+#: templates/parts/origin-modal.php:135
 msgid "Høyde"
 msgstr ""
 
-#: templates/parts/origin-modal.php:129
+#: templates/parts/origin-modal.php:140
 msgid "Produsenter"
 msgstr ""
 
-#: templates/parts/origin-modal.php:137
+#: templates/parts/origin-modal.php:148
 #: templates/single-attribute_page.php:146
 msgid "Fermentering"
 msgstr ""
 
-#: templates/parts/origin-modal.php:145
+#: templates/parts/origin-modal.php:156
 #: templates/single-attribute_page.php:152
 msgid "Tørking"
 msgstr ""
 
-#: templates/parts/origin-modal.php:152
+#: templates/parts/origin-modal.php:163
 msgid "Smaksprofil"
 msgstr ""
 
-#: templates/parts/origin-modal.php:170
+#: templates/parts/origin-modal.php:181
 msgid "Se hele siden →"
 msgstr ""
 
-#: templates/parts/origin-modal.php:179
+#: templates/parts/origin-modal.php:193
 msgid "Opprinnelser"
 msgstr ""
 
