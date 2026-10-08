@@ -161,7 +161,10 @@ try {
     $origin_slug = 'peru-nativo-blanco';
     $origin_term = get_term_by('slug', $origin_slug, 'pa_opprinnelse');
     $baseline    = $origin_term ? kaupang_attribute_suite_origin_product_count($origin_slug) : -1;
-    if ($origin_term && 0 === $baseline) {
+    if ('production' === wp_get_environment_type()) {
+        // A published product, however briefly, reaches Fiken, feeds and webhooks on a live store.
+        echo "skip count-cache fixture: environment is production (it publishes a product)\n";
+    } elseif ($origin_term && 0 === $baseline) {
         $live = new WC_Product_Variable();
         $live->set_name('kaupang check-archived-variations count fixture');
         $live->set_catalog_visibility('hidden');
