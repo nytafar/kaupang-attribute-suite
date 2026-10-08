@@ -83,8 +83,9 @@ function kaupang_attribute_suite_format_altitude($altitude) {
 }
 
 /**
- * Count published products using a given opprinnelse term slug.
- * Cached for 1 hour per slug.
+ * Count published products active for a given opprinnelse term slug — the same set its term archive lists
+ * (a variable product needs a published variation with the term; see archived-variations.php).
+ * Cached for 1 hour per slug; a variation changing status clears its parent's origins.
  *
  * @param string $slug pa_opprinnelse term slug.
  * @return int
@@ -94,7 +95,7 @@ function kaupang_attribute_suite_origin_product_count($slug) {
         return 0;
     }
 
-    $cache_key = 'origin_product_count_' . md5($slug);
+    $cache_key = 'origin_active_product_count_' . md5($slug); // key bumped when archived variations stopped counting
     $cached = wp_cache_get($cache_key, 'kaupang_attribute_suite_origin');
     if ($cached !== false) {
         return (int) $cached;
@@ -109,9 +110,11 @@ function kaupang_attribute_suite_origin_product_count($slug) {
     $query = new WP_Query(array(
         'post_type'      => 'product',
         'post_status'    => 'publish',
-        'posts_per_page' => 1,
+        // All IDs, not found_posts: Scalability Pro strips SQL_CALC_FOUND_ROWS, which left found_posts at 0.
+        'posts_per_page' => -1,
         'fields'         => 'ids',
-        'no_found_rows'  => false,
+        'no_found_rows'  => true,
+        'kaupang_attribute_suite_active_term' => array('pa_opprinnelse', $slug),
         'tax_query'      => array(array(
             'taxonomy' => 'pa_opprinnelse',
             'field'    => 'slug',
@@ -119,10 +122,27 @@ function kaupang_attribute_suite_origin_product_count($slug) {
         )),
     ));
 
-    $count = (int) $query->found_posts;
+    $count = count($query->posts);
     wp_cache_set($cache_key, $count, 'kaupang_attribute_suite_origin', HOUR_IN_SECONDS);
     return $count;
 }
+
+/**
+ * Archiving or re-enabling a variation changes which origins its parent counts for.
+ *
+ * @param string  $new_status New status.
+ * @param string  $old_status Old status.
+ * @param WP_Post $post       The post.
+ */
+function kaupang_attribute_suite_origin_count_on_variation_status($new_status, $old_status, $post) {
+    if ('product_variation' !== $post->post_type || $new_status === $old_status || !$post->post_parent) {
+        return;
+    }
+    foreach (wc_get_product_terms($post->post_parent, 'pa_opprinnelse', array('fields' => 'slugs')) as $slug) {
+        wp_cache_delete('origin_active_product_count_' . md5($slug), 'kaupang_attribute_suite_origin');
+    }
+}
+add_action('transition_post_status', 'kaupang_attribute_suite_origin_count_on_variation_status', 10, 3);
 
 /**
  * Inline SVG glyph by key. Returns a string safe to echo in templates.

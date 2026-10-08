@@ -113,6 +113,49 @@ try {
     $v3->set_status('private');
     $v3->save();
 
+    // 3b. Attribute term archives list only products active for the term (run as the main query, like /opprinnelse/<slug>/).
+    $simple = new WC_Product_Simple();
+    $simple->set_name('kaupang check-archived-variations simple fixture');
+    $simple->set_status('draft');
+    $simple_attr = new WC_Product_Attribute();
+    $simple_attr->set_id($tax_id);
+    $simple_attr->set_name('pa_mengde');
+    $simple_attr->set_options(array($terms['2000g']->term_id));
+    $simple_attr->set_visible(true);
+    $simple->set_attributes(array($simple_attr));
+    $simple_id = $simple->save();
+    $ids[]     = $simple_id;
+
+    $archive = function ($taxonomy, $slug, $statuses) {
+        global $wp_the_query, $wp_query;
+        $saved        = array($wp_the_query, $wp_query);
+        $wp_the_query = $wp_query = new WP_Query();
+        // Woo's main product query forces 'publish'; the fixtures are drafts so customers never see them.
+        $status = function ($query) use ($statuses) {
+            $query->set('post_status', $statuses);
+        };
+        add_action('pre_get_posts', $status, PHP_INT_MAX);
+        $found = $wp_query->query(array($taxonomy => $slug, 'post_type' => 'product', 'fields' => 'ids', 'posts_per_page' => -1));
+        remove_action('pre_get_posts', $status, PHP_INT_MAX);
+        list($wp_the_query, $wp_query) = $saved;
+        return array_map('intval', $found);
+    };
+    $drafts = array('draft');
+    $check(!in_array($parent_id, $archive('pa_mengde', '2000g', $drafts), true), 'term archive 2000g: variable product with only an archived 2000g variation not listed');
+    $check(in_array($simple_id, $archive('pa_mengde', '2000g', $drafts), true), 'term archive 2000g: simple product with the term still listed');
+    $check(in_array($parent_id, $archive('pa_mengde', '288g', $drafts), true), 'term archive 288g: variable product with a published 288g variation listed');
+    update_post_meta($v2->get_id(), 'attribute_pa_mengde', ''); // "Any Mengde"
+    $check(in_array($parent_id, $archive('pa_mengde', '2000g', $drafts), true), 'term archive 2000g: listed once a published variation has "any" Mengde');
+    update_post_meta($v2->get_id(), 'attribute_pa_mengde', '1400g');
+
+    // The origin count helper agrees with what each origin archive lists (live data, read-only).
+    foreach (get_terms(array('taxonomy' => 'pa_opprinnelse', 'hide_empty' => false)) as $origin) {
+        wp_cache_delete('origin_active_product_count_' . md5($origin->slug), 'kaupang_attribute_suite_origin');
+        $listed  = count($archive('pa_opprinnelse', $origin->slug, array('publish')));
+        $counted = kaupang_attribute_suite_origin_product_count($origin->slug);
+        $check($listed === $counted, "origin {$origin->slug}: count {$counted} = archive {$listed}");
+    }
+
     // 4. Admin panel query: published only by default, archived on the toggle, nothing else narrowed.
     $admins = get_users(array('role' => 'administrator', 'number' => 1, 'fields' => 'ID'));
     wp_set_current_user($admins ? (int) $admins[0] : 0);

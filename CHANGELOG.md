@@ -21,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`woocommerce_product_object_query_args`, one-shot), count via `woocommerce_admin_meta_boxes_variations_count`.
   Bulk actions act on what the panel shows: with archived hidden, "Toggle Enabled" and "Delete all variations" skip
   them (`woocommerce_bulk_edit_variations` request, one-shot `pre_get_posts`).
+  Attribute term archives (`/opprinnelse/<slug>/`) list only products active for the term — a variable product needs
+  a published variation with the term or "any" (`posts_where` on the main query; pagination agrees); the term page
+  stays even with no products. Each collapsed variation row shows an "Aktivert" checkbox mirroring Woo's own
+  `variable_enabled` field; unticked/archived rows are muted and labelled "Arkivert".
+
+### Fixed
+- `kaupang_attribute_suite_origin_product_count()` returned 0 with Scalability Pro active (it strips
+  `SQL_CALC_FOUND_ROWS`); it now counts IDs, matches the origin archive's list, and is cleared when a variation's
+  status changes.
   Opt out with `kaupang/attribute-suite/enable_archived_variations`. Check: `tools/check-archived-variations.php`.
 
 ## [2.1.0] - 2026-10-02

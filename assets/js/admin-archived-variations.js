@@ -13,6 +13,21 @@ jQuery(function ($) {
 
     var cfg = kaupangAttributeSuiteArchived;
     var woo = woocommerce_admin_meta_boxes_variations;
+
+    // Row-header "Aktivert": a mirror of Woo's variable_enabled[loop] (the field that gets saved). Ticking it
+    // ticks the real one and fires Woo's change, which marks the row for Save; the real one updates the mirror.
+    var enabled = 'input[name^="variable_enabled["]';
+    $('#variable_product_options .woocommerce_variations')
+        .on('click', '.kaupang-attribute-suite-variation-enabled', function (event) {
+            event.stopPropagation(); // don't expand/collapse the row (Woo's handlers sit on an ancestor)
+        })
+        .on('change', '.kaupang-attribute-suite-variation-enabled input', function () {
+            $(this).closest('.woocommerce_variation').find(enabled).prop('checked', this.checked).trigger('change');
+        })
+        .on('change', enabled, function () {
+            $(this).closest('.woocommerce_variation').find('.kaupang-attribute-suite-variation-enabled input').prop('checked', this.checked);
+        });
+
     var $toggle = $('.kaupang-attribute-suite-archived-toggle');
     if (!$toggle.length) {
         return;

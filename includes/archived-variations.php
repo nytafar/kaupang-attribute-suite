@@ -113,6 +113,35 @@ function kaupang_attribute_suite_filter_archived_variation_options($options, $pr
 }
 
 /**
+ * WHERE clause: the product row is active for an attribute term. A variable product needs a published variation
+ * with that term or "any" for the attribute (or no meta for it: attribute not used for variations); other product
+ * types pass. Applied by Kaupang_Attribute_Suite_Archived_Variations::filter_active_term_where().
+ *
+ * @param string $taxonomy Attribute taxonomy (`pa_opprinnelse`).
+ * @param string $slug     Term slug.
+ * @return string SQL starting with " AND", or '' when product types aren't registered.
+ */
+function kaupang_attribute_suite_active_for_term_where($taxonomy, $slug) {
+    global $wpdb;
+
+    $variable = get_term_by('slug', 'variable', 'product_type');
+    if (!$variable) {
+        return '';
+    }
+
+    return $wpdb->prepare(
+        " AND ({$wpdb->posts}.ID NOT IN (SELECT object_id FROM {$wpdb->term_relationships} WHERE term_taxonomy_id = %d)
+            OR EXISTS (SELECT 1 FROM {$wpdb->posts} kasv
+                LEFT JOIN {$wpdb->postmeta} kasm ON kasm.post_id = kasv.ID AND kasm.meta_key = %s
+                WHERE kasv.post_parent = {$wpdb->posts}.ID AND kasv.post_type = 'product_variation' AND kasv.post_status = 'publish'
+                AND (kasm.meta_value IS NULL OR kasm.meta_value IN (%s, ''))))",
+        $variable->term_taxonomy_id,
+        wc_variation_attribute_name($taxonomy),
+        $slug
+    );
+}
+
+/**
  * Published and archived (private) variation counts for a parent product. Uncached, like Woo's own count.
  *
  * @param int $product_id Parent product ID.
@@ -201,6 +230,7 @@ class Kaupang_Attribute_Suite_Archived_Variations {
         // Storefront.
         add_filter('woocommerce_dropdown_variation_attribute_options_args', array($this, 'filter_dropdown_args'), 20);
         add_filter('woocommerce_display_product_attributes', array($this, 'filter_product_attributes_table'), 20, 2);
+        add_filter('posts_where', array($this, 'filter_active_term_where'), 10, 2);
 
         if (is_admin()) {
             $this->register_admin_hooks();
@@ -213,6 +243,7 @@ class Kaupang_Attribute_Suite_Archived_Variations {
     public function register_admin_hooks() {
         add_filter('woocommerce_admin_meta_boxes_variations_count', array($this, 'filter_variations_count'), 20, 2);
         add_action('woocommerce_variable_product_before_variations', array($this, 'render_toggle'));
+        add_action('woocommerce_variation_header', array($this, 'render_header_enabled'), 10, 2);
         // Priority 1: before Woo's own handlers (10).
         add_action('wp_ajax_woocommerce_load_variations', array($this, 'prepare_load_variations'), 1);
         add_action('wp_ajax_woocommerce_bulk_edit_variations', array($this, 'prepare_bulk_edit_variations'), 1);
@@ -313,6 +344,27 @@ class Kaupang_Attribute_Suite_Archived_Variations {
     }
 
     /**
+     * Storefront attribute term archives (`/opprinnelse/<slug>/`) list only products active for the term, and so does
+     * any query passing `kaupang_attribute_suite_active_term => [taxonomy, slug]` (the origin product count).
+     * In the WHERE clause, so pagination and found_posts agree with the list. The term page itself always stays.
+     *
+     * @param string   $where SQL WHERE.
+     * @param WP_Query $query The query.
+     * @return string
+     */
+    public function filter_active_term_where($where, $query) {
+        $term = $query->get('kaupang_attribute_suite_active_term');
+        if (!$term && !is_admin() && $query->is_main_query() && $query->is_tax()) {
+            $object = $query->get_queried_object();
+            if ($object instanceof WP_Term && taxonomy_is_product_attribute($object->taxonomy)) {
+                $term = array($object->taxonomy, $object->slug);
+            }
+        }
+
+        return (is_array($term) && 2 === count($term)) ? $where . kaupang_attribute_suite_active_for_term_where($term[0], $term[1]) : $where;
+    }
+
+    /**
      * Admin: the panel's count (and so its pagination) counts published variations only.
      *
      * @param int $count      Woo's publish + private count.
@@ -337,6 +389,23 @@ class Kaupang_Attribute_Suite_Archived_Variations {
             (int) $this->archived_count,
             $this->archived_count > 0 ? '' : ' style="display:none"',
             esc_html($this->toggle_label(false, $this->archived_count))
+        );
+    }
+
+    /**
+     * Admin: "Aktivert" on the collapsed row header. A mirror without a name, so it's never posted: the script keeps
+     * it in sync with Woo's `variable_enabled[loop]`, which stays the one field that gets saved. Archived rows (and
+     * rows unticked live) are muted and labelled "Arkivert" by CSS `:has()` on that real checkbox.
+     *
+     * @param WP_Post $variation Variation post.
+     * @param int     $loop      Row index.
+     */
+    public function render_header_enabled($variation, $loop) {
+        printf(
+            '<label class="kaupang-attribute-suite-variation-enabled"><input type="checkbox"%1$s> %2$s</label><span class="kaupang-attribute-suite-archived-badge">%3$s</span>',
+            checked('private' !== $variation->post_status, true, false),
+            esc_html__('Aktivert', 'kaupang-attribute-suite'),
+            esc_html__('Arkivert', 'kaupang-attribute-suite')
         );
     }
 
@@ -458,6 +527,12 @@ class Kaupang_Attribute_Suite_Archived_Variations {
             /* translators: %d: number of archived (disabled) variations */
             'hide'   => __('Skjul arkiverte (%d)', 'kaupang-attribute-suite'),
         ));
+        wp_add_inline_style('woocommerce_admin_styles', '
+            .kaupang-attribute-suite-variation-enabled { margin: 0 8px; font-weight: 400; vertical-align: middle; }
+            .kaupang-attribute-suite-archived-badge { display: none; padding: 1px 6px; border-radius: 3px; background: #dcdcde; color: #50575e; font-size: 12px; font-weight: 400; vertical-align: middle; }
+            .woocommerce_variation:has(input[name^="variable_enabled["]:not(:checked)) > h3 > :is(strong, select) { opacity: .5; }
+            .woocommerce_variation:has(input[name^="variable_enabled["]:not(:checked)) .kaupang-attribute-suite-archived-badge { display: inline-block; }
+        ');
     }
 }
 
