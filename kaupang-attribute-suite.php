@@ -56,6 +56,7 @@ function kaupang_attribute_suite_init() {
     require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/origin/origin-admin.php';
     require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/origin/origin-admin-certifications.php';
     require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/variation-improvements.php';
+    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/archived-variations.php';
     require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/inline-variation-description.php';
     require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/variation-gallery-transition.php';
     require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/gtin-links.php';

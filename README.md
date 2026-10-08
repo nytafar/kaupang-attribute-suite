@@ -167,6 +167,7 @@ echo kaupang_attribute_suite_render_origin_sheet(kaupang_attribute_suite_build_o
 | `kaupang_attribute_suite_enable_inline_variation_description` | Enable inline description rendering in variations table (default: false, must be enabled by theme) |
 | `kaupang_attribute_suite_inline_variation_description_config` | Configure inline description behavior (target_attribute, auto_detect) |
 | `kaupang_attribute_suite_inline_description_animation_duration` | Animation duration in ms for showing/hiding inline description (default: 200) |
+| `kaupang/attribute-suite/enable_archived_variations` | Treat disabled (private) variations as archived: hide their options on the storefront and from the admin Variations list, with a "Vis arkiverte (N)" toggle (default: true). Check: `tools/check-archived-variations.php` |
 
 ## 🔄 Compatibility
 
