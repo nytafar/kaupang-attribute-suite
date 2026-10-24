@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Loading precision (docs/loading, attribute-suite#2): a guest page that renders nothing of ours loads the main file,
+  `includes/core.php` and the catalogue (was 18 includes). CPT/taxonomy/meta registration, the block pattern, rewrite
+  rules and cache invalidation moved into `core.php` (every context); everything else is a module loaded where it is
+  used: variable product pages, attribute term archives, origin pages and `/01/` URLs at `wp`; variation data
+  (`woocommerce_available_variation`, threshold, Mix and Match, option lists) through lazy hooks in any context
+  (wc-ajax, quick views, REST, CLI); admin files on wp-admin screens and for logged-in admin-ajax only.
+- Storefront JS is deferred, and inline description, gallery transition and variation display load on variable
+  products only (were on every product page). The origin modal ships a 2 KB opener; `origin-modal.js` (now an ES
+  module) and the radar are imported on the first open. `wc-ras-origin-radar` is no longer registered on every page.
+- The rewrite-version check runs on `admin_init` instead of every request's `wp_loaded`: a version bump takes effect on
+  the next wp-admin page load. `kaupang_attribute_suite_rewrite_version` moves off autoload there; option writes set
+  autoload explicitly.
+- The starter block pattern reads its markup from `includes/origin/pattern-origin-starter.php` (`filePath`) only when
+  the editor asks for it.
+
+### Added
+- `tools/check.php` (loading, registration, cross-context hooks, admin foreign-screen rule, storefront budget) and
+  `tools/load-budget.php`; README "Load map".
+
 ## [2.3.0] - 2026-10-08
 
 ### Added

@@ -6,8 +6,7 @@
  *   - CPT stylesheet enqueue (origin.css) on CPT archive, CPT single,
  *     origin_country archive, certification archive. No product-page
  *     styling — theme owns that in this pass.
- *   - origin-radar.js registration (handle used as dependency by modal).
- *   - Product-page origin-modal enqueue + render hook (fase 3).
+ *   - Product-page origin-modal enqueue (deferred opener; modal + radar code imported on first open) + render hook.
  *   - Public inline render of the same card for other callers
  *     (kaupang_attribute_suite_render_origin_sheet()).
  *   - Template-include fallback so CPT archive/single use plugin
@@ -47,27 +46,6 @@ function kaupang_attribute_suite_origin_enqueue_styles() {
     );
 }
 add_action('wp_enqueue_scripts', 'kaupang_attribute_suite_origin_enqueue_styles');
-
-/**
- * Register the radar script. Callers enqueue on demand (modal in fase 3).
- */
-function kaupang_attribute_suite_origin_register_radar_script() {
-    $js_path = KAUPANG_ATTRIBUTE_SUITE_DIR . 'assets/js/origin-radar.js';
-    $js_ver  = KAUPANG_ATTRIBUTE_SUITE_VERSION . '.' . (file_exists($js_path) ? filemtime($js_path) : 0);
-
-    wp_register_script(
-        'wc-ras-origin-radar',
-        KAUPANG_ATTRIBUTE_SUITE_URL . 'assets/js/origin-radar.js',
-        array(),
-        $js_ver,
-        true
-    );
-
-    if (function_exists('kaupang_attribute_suite_taste_axes')) {
-        wp_localize_script('wc-ras-origin-radar', 'wcRasTasteAxes', kaupang_attribute_suite_taste_axes());
-    }
-}
-add_action('wp_enqueue_scripts', 'kaupang_attribute_suite_origin_register_radar_script');
 
 function kaupang_attribute_suite_origin_product_has_attribute_pages($product) {
     if (!$product instanceof WC_Product || !$product->is_type('variable')) {
@@ -200,27 +178,40 @@ function kaupang_attribute_suite_render_origin_sheet(array $origin, array $args 
 }
 
 /**
- * Register the modal stylesheet + enqueue the modal script on product
- * pages that have pa_opprinnelse variations. Radar JS is pulled in as a
- * dependency, so pages without the modal never pay for either.
+ * Product pages with pa_opprinnelse variations: the modal stylesheet and a small deferred opener. The opener imports
+ * the modal code (origin-modal.js, an ES module) and the radar on first open, so pages pay for neither until then.
  */
 function kaupang_attribute_suite_origin_enqueue_modal_assets() {
     if (!kaupang_attribute_suite_origin_modal_product()) {
         return;
     }
 
-    $js_path = KAUPANG_ATTRIBUTE_SUITE_DIR . 'assets/js/origin-modal.js';
-    $js_ver  = KAUPANG_ATTRIBUTE_SUITE_VERSION . '.' . (file_exists($js_path) ? filemtime($js_path) : 0);
-
     kaupang_attribute_suite_enqueue_origin_sheet_assets();
+
+    $asset = static function ($rel) {
+        $path = KAUPANG_ATTRIBUTE_SUITE_DIR . $rel;
+        $ver  = KAUPANG_ATTRIBUTE_SUITE_VERSION . '.' . (file_exists($path) ? filemtime($path) : 0);
+        return array(KAUPANG_ATTRIBUTE_SUITE_URL . $rel, $ver);
+    };
+    list($opener, $opener_ver) = $asset('assets/js/origin-modal-opener.js');
+    list($modal, $modal_ver)   = $asset('assets/js/origin-modal.js');
+    list($radar, $radar_ver)   = $asset('assets/js/origin-radar.js');
 
     wp_enqueue_script(
         'wc-ras-origin-modal',
-        KAUPANG_ATTRIBUTE_SUITE_URL . 'assets/js/origin-modal.js',
-        array('jquery', 'wc-add-to-cart-variation', 'wc-ras-origin-radar'),
-        $js_ver,
-        true
+        $opener,
+        array('jquery', 'wc-add-to-cart-variation'),
+        $opener_ver,
+        array('in_footer' => true, 'strategy' => 'defer')
     );
+    wp_add_inline_script('wc-ras-origin-modal', sprintf(
+        'window.wcRasTasteAxes=%s;window.wcRasOriginModal=%s;',
+        wp_json_encode(kaupang_attribute_suite_taste_axes()),
+        wp_json_encode(array(
+            'modal' => add_query_arg('ver', $modal_ver, $modal),
+            'radar' => add_query_arg('ver', $radar_ver, $radar),
+        ))
+    ), 'before');
 }
 add_action('wp_enqueue_scripts', 'kaupang_attribute_suite_origin_enqueue_modal_assets', 20);
 

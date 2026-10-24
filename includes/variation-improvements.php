@@ -56,7 +56,7 @@ class Kaupang_Attribute_Suite_Variation_Improvements {
             KAUPANG_ATTRIBUTE_SUITE_URL . 'assets/js/variation-display.js',
             array('jquery', 'wc-add-to-cart-variation'),
             KAUPANG_ATTRIBUTE_SUITE_VERSION,
-            true
+            array('in_footer' => true, 'strategy' => 'defer')
         );
     }
     
@@ -64,8 +64,8 @@ class Kaupang_Attribute_Suite_Variation_Improvements {
      * Enqueue variation display script for separate meta display
      */
     public function enqueue_variation_display_script() {
-        // Only on product pages
-        if (!is_product()) {
+        // Only on variable product pages
+        if (!kaupang_attribute_suite_is_variable_product_page()) {
             return;
         }
         

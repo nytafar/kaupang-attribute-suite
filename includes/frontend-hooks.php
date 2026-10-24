@@ -2,10 +2,7 @@
 /**
  * Frontend Hooks
  *
- * Owns:
- *   - Rewrite-flush gate (activation, version bump, attribute changes). Attribute
- *     term archives (/opprinnelse/{slug}/) are Woo's: on only for attributes with
- *     "Enable archives" ticked (Products → Attributes); this plugin never forces them.
+ * Owns (module `variations` / `sheet`, see core.php):
  *   - Cached attribute_page lookup helper used by variation preload and
  *     everywhere we resolve a term slug to its rich-content CPT post.
  *   - Variation preload: injects the full `wc_ras_origin` struct into
@@ -22,48 +19,6 @@
  */
 
 defined('ABSPATH') || exit;
-
-/**
- * Rewrite rules are rebuilt once after activation, a version bump, or a change to an attribute's
- * "Enable archives" (Woo registers pa_* taxonomies public with a rewrite only when that is on).
- *
- * On wp_loaded, not init: flush_rewrite_rules() before wp_loaded only queues itself for wp_loaded,
- * so clearing the flag at init lost the flush whenever the request exited in between — Jetpack's
- * dedicated sync request (/wp-json/jetpack/v4/sync/spawn-sync) exits at init 200, and was the first
- * PHP hit after activating on nyta.no. The flag is cleared only once the rules are written.
- */
-function kaupang_attribute_suite_maybe_flush_rewrite_rules() {
-    if (get_option('kaupang_attribute_suite_flush_rewrite_rules')) {
-        flush_rewrite_rules();
-        delete_option('kaupang_attribute_suite_flush_rewrite_rules');
-    }
-}
-add_action('wp_loaded', 'kaupang_attribute_suite_maybe_flush_rewrite_rules', 99);
-
-/**
- * Bump rewrite-flush on version change so new CPT/taxonomy rewrite rules
- * take effect without asking the admin to visit Permalinks manually.
- */
-function kaupang_attribute_suite_check_rewrite_rules_version() {
-    $current_version = get_option('kaupang_attribute_suite_rewrite_version', '0');
-
-    if (version_compare($current_version, KAUPANG_ATTRIBUTE_SUITE_VERSION, '<')) {
-        update_option('kaupang_attribute_suite_flush_rewrite_rules', true);
-        update_option('kaupang_attribute_suite_rewrite_version', KAUPANG_ATTRIBUTE_SUITE_VERSION);
-    }
-}
-add_action('wp_loaded', 'kaupang_attribute_suite_check_rewrite_rules_version', 98);
-
-/**
- * Attribute added, edited ("Enable archives" toggled) or deleted: flush on the next request, which registers the
- * taxonomies with the new setting. Woo queues its own flush on WP-Cron, which waits for the system cron here.
- */
-function kaupang_attribute_suite_queue_rewrite_flush() {
-    update_option('kaupang_attribute_suite_flush_rewrite_rules', true);
-}
-add_action('woocommerce_attribute_added', 'kaupang_attribute_suite_queue_rewrite_flush');
-add_action('woocommerce_attribute_updated', 'kaupang_attribute_suite_queue_rewrite_flush');
-add_action('woocommerce_attribute_deleted', 'kaupang_attribute_suite_queue_rewrite_flush');
 
 function kaupang_attribute_suite_force_client_side_variations_threshold($threshold, $product) {
     if (!$product instanceof WC_Product || !$product->is_type('variable')) {

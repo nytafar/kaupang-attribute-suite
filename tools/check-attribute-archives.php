@@ -12,6 +12,10 @@ $check = function ($ok, $msg) use (&$fail) {
     $fail |= !$ok;
 };
 
+if (function_exists('kaupang_attribute_suite_load')) {
+    kaupang_attribute_suite_load('variations'); // learn-more links: loaded on demand since 2.4 (core.php)
+}
+
 $flush = 'kaupang_attribute_suite_maybe_flush_rewrite_rules';
 $check(has_action('init', $flush) === false && has_action('wp_loaded', $flush) !== false, 'rewrite flush runs on wp_loaded, not init (an exit between them used to lose it)');
 $check(!get_option('kaupang_attribute_suite_flush_rewrite_rules'), 'no rewrite flush left pending after wp_loaded');

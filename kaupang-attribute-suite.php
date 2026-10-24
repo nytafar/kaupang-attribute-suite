@@ -37,29 +37,14 @@ add_action('before_woocommerce_init', function () {
     }
 });
 
-// Include core files. `Requires Plugins` only guards the plugins UI and activation; the
+// Core only: registration, cache invalidation, and the gates that load each module where it is used
+// (includes/core.php, README "Load map"). `Requires Plugins` only guards the plugins UI and activation; the
 // loader and `wp plugin deactivate woocommerce` don't honour it, so bail here (inert plugin).
 function kaupang_attribute_suite_init() {
     if (!class_exists('WooCommerce')) {
         return;
     }
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/template-loader.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/cpt-attribute-page.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/origin/origin-config.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/origin/origin-meta.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/origin/origin-taxonomies.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/origin/origin-render.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/frontend-hooks.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/origin/origin-frontend.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/origin/block-patterns.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/admin-hooks.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/origin/origin-admin.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/origin/origin-admin-certifications.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/variation-improvements.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/archived-variations.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/inline-variation-description.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/variation-gallery-transition.php';
-    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/gtin-links.php';
+    require_once KAUPANG_ATTRIBUTE_SUITE_DIR . 'includes/core.php';
 }
 add_action('plugins_loaded', 'kaupang_attribute_suite_init');
 
@@ -73,7 +58,7 @@ add_action('init', function () {
 register_activation_hook(__FILE__, 'kaupang_attribute_suite_activate');
 function kaupang_attribute_suite_activate() {
     // Flush on the next request: this one loaded before the plugin, so none of its rules are registered yet.
-    update_option('kaupang_attribute_suite_flush_rewrite_rules', true);
+    update_option('kaupang_attribute_suite_flush_rewrite_rules', true, false);
     // Orphaned rows from the pre-rename plugin (woocommerce-rich-attribute-suite).
     delete_option('wc_ras_rewrite_version');
     delete_option('wc_ras_flush_rewrite_rules');

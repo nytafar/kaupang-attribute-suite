@@ -46,15 +46,15 @@ class Kaupang_Attribute_Suite_Variation_Gallery_Transition {
             KAUPANG_ATTRIBUTE_SUITE_URL . 'assets/js/variation-gallery-transition.js',
             array('jquery', 'wc-add-to-cart-variation'),
             file_exists($js_path) ? filemtime($js_path) : KAUPANG_ATTRIBUTE_SUITE_VERSION,
-            true
+            array('in_footer' => true, 'strategy' => 'defer')
         );
     }
 
     /**
-     * Enqueues the registered assets only on single product pages.
+     * Enqueues the registered assets only on variable product pages (the only ones with variations to fade between).
      */
     public function enqueue_assets() {
-        if (!function_exists('is_product') || !is_product()) {
+        if (!kaupang_attribute_suite_is_variable_product_page()) {
             return;
         }
         wp_enqueue_style('wc-ras-variation-gallery-transition');

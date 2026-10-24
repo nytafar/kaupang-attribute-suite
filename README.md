@@ -23,7 +23,7 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 - **Variation Description Fallback**: Automatically use attribute term descriptions when variation descriptions are empty
 - **Mix and Match Support**: Extends description fallback to WooCommerce Mix and Match products
 - **Inline Variation Description**: Render descriptions directly in the variations table, eliminating CLS and DOM manipulation issues
-- **Attribute Term Archives follow WooCommerce**: an attribute's term archives (e.g. `/opprinnelse/<slug>/`) exist only when "Enable archives" is ticked on it (Products → Attributes); with it off there are no rewrite rules and no links to them. Rewrite rules are rebuilt on the next request after activation, deactivation, a version bump or an attribute change. Check: `tools/check-attribute-archives.php`
+- **Attribute Term Archives follow WooCommerce**: an attribute's term archives (e.g. `/opprinnelse/<slug>/`) exist only when "Enable archives" is ticked on it (Products → Attributes); with it off there are no rewrite rules and no links to them. Rewrite rules are rebuilt on the next request after activation, deactivation or an attribute change; after a version bump, on the request after the next wp-admin page load. Check: `tools/check-attribute-archives.php`
 - **Term List Enhancements**: Description and Rich Content columns in attribute term list tables
 - **Quick Edit Description**: Edit term descriptions directly from the term list using Quick Edit
 
@@ -168,6 +168,35 @@ echo kaupang_attribute_suite_render_origin_sheet(kaupang_attribute_suite_build_o
 | `kaupang_attribute_suite_inline_variation_description_config` | Configure inline description behavior (target_attribute, auto_detect) |
 | `kaupang_attribute_suite_inline_description_animation_duration` | Animation duration in ms for showing/hiding inline description (default: 200) |
 | `kaupang/attribute-suite/enable_archived_variations` | Treat disabled (private) variations as archived: hide their options on the storefront and from the admin Variations list, with a "Vis arkiverte (N)" toggle (default: true). Check: `tools/check-archived-variations.php` |
+
+## Load map
+
+`includes/core.php` loads on every request: CPT, taxonomy, meta and block-pattern registration, rewrite rules, cache
+invalidation, and the gates below. Every other file is a module, loaded by `kaupang_attribute_suite_load()` where its
+context shows up (decided at `wp` on the storefront, so before `wp_enqueue_scripts` and `template_redirect`).
+
+| Context | Modules (files beyond main + core) | Assets | Autoloaded options |
+|---|---|---|---|
+| Guest page that renders nothing of ours (front page, shop, category, cart, account, pages) | none (+ the nb_NO catalogue: CPT/taxonomy labels are translated on `init`) | none | none |
+| Simple product, checkout, order received | + `templates/variation-no-description.php` when a third party enqueues `wc-add-to-cart-variation` (Woo prints its variation JS template; core swaps it, as before) | none | none |
+| Variable product | `variations` (template-loader, frontend-hooks, origin-render, variation-improvements, inline-variation-description, archived-variations) + `gallery` | `wc-ras-inline-description`, `wc-ras-variation-gallery-transition` (JS + CSS); JS deferred | none |
+| Variable product with `pa_opprinnelse` and attribute pages | + `sheet` (origin-frontend) and the modal/description templates | + `wc-ras-origin-modal`: stylesheet + 2 KB deferred opener. `origin-modal.js` (ES module) and `origin-radar.js` are imported on the first click of an origin CTA (warmed on hover/focus) | none |
+| Attribute term archive (`/opprinnelse/<slug>/`, where "Enable archives" is on) | `archived` (its `posts_where` filters the main query) | none | none |
+| Origin pages (`/opprinnelser/`, single, `origin_country`/`certification` archives) | `sheet` (+ `archived` for the product counts) | `wc-ras-origin` | none |
+| `/01/<GTIN>…` (GS1 link, kaupang-trace batch page) | `gtin` + `sheet` (kaupang-trace calls the render API at `template_redirect` 0) | `wc-ras-origin-modal` stylesheet when trace renders the inline card | none |
+| Variation data elsewhere (`wc-ajax=get_variation`, quick views, Mix and Match children, REST, CLI) | `variations`, loaded on the first `woocommerce_available_variation` / `woocommerce_ajax_variation_threshold` / `wc_mnm_child_item_details`; `archived` on variation option lists and variable products' attributes table | none | none |
+| wp-admin screens | `admin` (admin-hooks, origin-admin, origin-admin-certifications, archived-variations). Assets on their own screens only: cert picker on `certification` term screens, description nonce + quick-edit script on the `pa_*` term list, archived-variations script on the product edit screen | as listed | none |
+| admin-ajax | `admin` at `admin_init`, logged-in users only (all its handlers are `wp_ajax_*`) | — | none |
+| WP-CLI | `sheet` + `gtin` (the public API; kaupang-trace's check calls it) | — | none |
+| REST, cron | core only; modules load through the lazy hooks above | — | none |
+
+Options: `kaupang_attribute_suite_rewrite_version` is read only on `admin_init` (not autoloaded; the version check moves
+a pre-2.4 autoloaded row off on the next wp-admin page load). `kaupang_attribute_suite_flush_rewrite_rules` exists only
+between a queued flush and the next request's `wp_loaded`, written with autoload off.
+
+Checks: `tools/check.php` (loading, registration, cross-context hooks, admin foreign-screen rule, storefront budget via
+`wp kaupang-assets audit --plugins=kaupang-attribute-suite --budget`; budget in `tools/load-budget.php`), run as the site
+user: `sudo -u <sysuser> wp --path=/var/www/<site>/htdocs eval-file wp-content/plugins/kaupang-attribute-suite/tools/check.php`.
 
 ## 🔄 Compatibility
 

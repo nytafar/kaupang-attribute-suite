@@ -127,49 +127,7 @@ function kaupang_attribute_suite_origin_product_count($slug) {
     return $count;
 }
 
-/**
- * Clear cached origin counts for a product (or a variation's parent), or for the given slugs.
- *
- * @param int        $post_id Product or variation ID.
- * @param array|null $slugs   pa_opprinnelse slugs; default: the product's current ones.
- */
-function kaupang_attribute_suite_flush_origin_counts($post_id, $slugs = null) {
-    $parent = wp_get_post_parent_id($post_id);
-    if (null === $slugs) {
-        $slugs = wc_get_product_terms($parent ? $parent : $post_id, 'pa_opprinnelse', array('fields' => 'slugs'));
-    }
-    foreach ((array) $slugs as $slug) {
-        wp_cache_delete('origin_active_product_count_' . md5($slug), 'kaupang_attribute_suite_origin');
-    }
-}
-
-// Anything that changes which products an origin counts: status (incl. trash/untrash), deletion, a variation's
-// attributes, the parent's save (type), and its origin terms (old and new).
-add_action('transition_post_status', function ($new_status, $old_status, $post) {
-    if ($new_status !== $old_status && in_array($post->post_type, array('product', 'product_variation'), true)) {
-        kaupang_attribute_suite_flush_origin_counts($post->ID);
-    }
-}, 10, 3);
-add_action('before_delete_post', function ($post_id, $post) {
-    if (in_array($post->post_type, array('product', 'product_variation'), true)) {
-        kaupang_attribute_suite_flush_origin_counts($post_id);
-    }
-}, 10, 2);
-add_action('woocommerce_update_product_variation', 'kaupang_attribute_suite_flush_origin_counts');
-add_action('woocommerce_update_product', 'kaupang_attribute_suite_flush_origin_counts');
-add_action('set_object_terms', function ($object_id, $terms, $tt_ids, $taxonomy, $append, $old_tt_ids) {
-    if ('pa_opprinnelse' !== $taxonomy) {
-        return;
-    }
-    $slugs = array();
-    foreach (array_unique(array_merge((array) $tt_ids, (array) $old_tt_ids)) as $tt_id) {
-        $term = get_term_by('term_taxonomy_id', (int) $tt_id, 'pa_opprinnelse');
-        if ($term) {
-            $slugs[] = $term->slug;
-        }
-    }
-    kaupang_attribute_suite_flush_origin_counts($object_id, $slugs);
-}, 10, 6);
+// Count cache invalidation (kaupang_attribute_suite_flush_origin_counts) lives in core.php: any context can change a count.
 
 /**
  * Inline SVG glyph by key. Returns a string safe to echo in templates.

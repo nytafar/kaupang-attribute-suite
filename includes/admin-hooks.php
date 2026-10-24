@@ -488,3 +488,108 @@ function kaupang_attribute_suite_add_description_save_nonce() {
     <?php
 }
 add_action('admin_head', 'kaupang_attribute_suite_add_description_save_nonce');
+
+/**
+ * Add custom admin menu structure for Attribute Suite
+ */
+function kaupang_attribute_suite_customize_admin_menu() {
+    global $submenu;
+    
+    // Get all product attributes
+    $attribute_taxonomies = wc_get_attribute_taxonomies();
+    
+    if (!empty($attribute_taxonomies) && isset($submenu['edit.php?post_type=attribute_page'])) {
+        // Remove the "Add New" submenu item
+        foreach ($submenu['edit.php?post_type=attribute_page'] as $key => $item) {
+            if ($item[2] === 'post-new.php?post_type=attribute_page') {
+                unset($submenu['edit.php?post_type=attribute_page'][$key]);
+                break;
+            }
+        }
+        
+        // Insert attribute term configuration links before "All Pages"
+        $new_submenu = array();
+        $inserted = false;
+        
+        foreach ($submenu['edit.php?post_type=attribute_page'] as $key => $item) {
+            // Insert attribute links before "All Pages"
+            if (!$inserted && $item[2] === 'edit.php?post_type=attribute_page') {
+                // Add separator comment
+                foreach ($attribute_taxonomies as $tax) {
+                    $taxonomy_name = wc_attribute_taxonomy_name($tax->attribute_name);
+                    $attribute_label = $tax->attribute_label ? $tax->attribute_label : $tax->attribute_name;
+                    
+                    $new_submenu[] = array(
+                        $attribute_label,
+                        'manage_product_terms',
+                        'edit-tags.php?taxonomy=' . $taxonomy_name . '&post_type=product'
+                    );
+                }
+                $inserted = true;
+            }
+            
+            $new_submenu[] = $item;
+        }
+        
+        $submenu['edit.php?post_type=attribute_page'] = $new_submenu;
+    }
+}
+add_action('admin_menu', 'kaupang_attribute_suite_customize_admin_menu', 999);
+
+/**
+ * Pre-fill attribute page data when creating from term edit screen
+ * 
+ * Captures URL parameters and sets up default title/slug
+ */
+function kaupang_attribute_suite_prefill_attribute_page_from_url() {
+    global $pagenow;
+    
+    // Only on new post screen for attribute_page
+    if ($pagenow !== 'post-new.php' || !isset($_GET['post_type']) || $_GET['post_type'] !== 'attribute_page') {
+        return;
+    }
+    
+    // Check for attribute term parameters
+    if (!isset($_GET['attribute_term']) || !isset($_GET['attribute_taxonomy'])) {
+        return;
+    }
+    
+    $term_slug = sanitize_text_field($_GET['attribute_term']);
+    $taxonomy = sanitize_text_field($_GET['attribute_taxonomy']);
+    
+    // Get the term
+    $term = get_term_by('slug', $term_slug, $taxonomy);
+    if (!$term || is_wp_error($term)) {
+        return;
+    }
+    
+    // Store in transient for use when post is saved
+    set_transient('kaupang_attribute_suite_pending_attribute_page_' . get_current_user_id(), array(
+        'term_id' => $term->term_id,
+        'term_slug' => $term_slug,
+        'term_name' => $term->name,
+        'taxonomy' => $taxonomy,
+    ), HOUR_IN_SECONDS);
+    
+    // Pre-fill title using JavaScript
+    add_action('admin_footer', function() use ($term) {
+        ?>
+        <script>
+        jQuery(document).ready(function($) {
+            // For classic editor
+            if ($('#title').length && !$('#title').val()) {
+                $('#title').val(<?php echo wp_json_encode($term->name); ?>);
+            }
+            // For block editor - set default title
+            if (typeof wp !== 'undefined' && wp.data && wp.data.select('core/editor')) {
+                var currentTitle = wp.data.select('core/editor').getEditedPostAttribute('title');
+                if (!currentTitle) {
+                    wp.data.dispatch('core/editor').editPost({ title: <?php echo wp_json_encode($term->name); ?> });
+                }
+            }
+        });
+        </script>
+        <?php
+    });
+}
+add_action('admin_init', 'kaupang_attribute_suite_prefill_attribute_page_from_url');

@@ -16,14 +16,7 @@
 
 defined('ABSPATH') || exit;
 
-add_action('init', function () {
-    add_rewrite_rule('^01/([^/]+)(/.*)?$', 'index.php?kaupang_gtin=$matches[1]', 'top');
-});
-
-add_filter('query_vars', function ($vars) {
-    $vars[] = 'kaupang_gtin';
-    return $vars;
-});
+// Rewrite rule + query var: core.php (every request). Loaded by kaupang_attribute_suite_route_front() on /01/ URLs.
 
 /**
  * GTIN-8/12/13/14 → GTIN-14, or null when the length or GS1 check digit is wrong.

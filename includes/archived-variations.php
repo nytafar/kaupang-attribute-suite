@@ -18,7 +18,8 @@
  * Nothing is ever unassigned or deleted: parent attribute terms and their attribute pages stay.
  *
  * Gated by `kaupang/attribute-suite/enable_variation_improvements` and
- * `kaupang/attribute-suite/enable_archived_variations` (both default true; read on `init`, so a theme can opt out).
+ * `kaupang/attribute-suite/enable_archived_variations` (both default true; read on `init`, or on load when that is later,
+ * so a theme can opt out). Loaded on demand by core.php (variable-product option lists, attribute term archives, admin).
  *
  * Check: tools/check-archived-variations.php
  *
@@ -216,7 +217,12 @@ class Kaupang_Attribute_Suite_Archived_Variations {
      * Constructor
      */
     private function __construct() {
-        add_action('init', array($this, 'maybe_init'), 20);
+        // Loaded late (storefront gate, lazy loader, admin-ajax): init has run and theme filters are in place.
+        if (did_action('init')) {
+            $this->maybe_init();
+        } else {
+            add_action('init', array($this, 'maybe_init'), 20);
+        }
     }
 
     /**

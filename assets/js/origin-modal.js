@@ -9,6 +9,10 @@
  *   through the same code path an attribute click uses — there is no
  *   local modal state; the strip's selected tile is the position indicator.
  *
+ * Loading: an ES module, imported on the first CTA click by origin-modal-opener.js (the only script that loads with
+ * the page), which calls toggle(form, lastEvent). The first call sets the form up and replays the last variation
+ * event the opener saw, so the card matches the current selection.
+ *
  * Pipeline:
  *   CTA click → open dialog (mobile showModal / desktop show, capped to
  *     the gallery's main image box).
@@ -22,24 +26,38 @@
  *
  * @package Kaupang\AttributeSuite
  */
-(function () {
-    'use strict';
-
     var DESKTOP_MQ = '(min-width: 1024px)';
     var SWIPE_THRESHOLD = 50;
 
+    var contexts = new WeakMap();
+
     /**
-     * Initialise every variations form on the page exactly once.
+     * Open or close the dialog for a form, setting the form up on first use.
+     *
+     * @param {HTMLFormElement} form
+     * @param {{type:string, variation:Object|null}} [last] Last variation event on the form, from the opener.
      */
-    function init() {
-        var forms = document.querySelectorAll('form.variations_form');
-        forms.forEach(function (form) {
-            if (form.dataset.wcRasOriginModalInit === 'true') {
+    export function toggle(form, last) {
+        var ctx = contexts.get(form);
+        if (!ctx) {
+            ctx = setupForm(form);
+            if (!ctx) {
                 return;
             }
-            form.dataset.wcRasOriginModalInit = 'true';
-            setupForm(form);
-        });
+            contexts.set(form, ctx);
+            if (last && (last.type === 'found_variation' || last.type === 'show_variation')) {
+                if (last.variation && last.variation.wc_ras_origin) {
+                    hydrateCard(ctx, last.variation.wc_ras_origin);
+                }
+            } else if (last) {
+                hideAllGroups(ctx.card);
+            }
+        }
+        if (ctx.dialog.open) {
+            ctx.dialog.close();
+        } else {
+            openDialog(ctx);
+        }
     }
 
     /**
@@ -48,12 +66,12 @@
     function setupForm(form) {
         var dialog = document.querySelector('[data-wc-ras-origin-modal]');
         if (!dialog) {
-            return;
+            return null;
         }
 
         var card = dialog.querySelector('[data-origin-modal-card]');
         if (!card) {
-            return;
+            return null;
         }
 
         // PHP can only render the dialog inside .woocommerce-product-gallery__wrapper
@@ -77,23 +95,7 @@
 
         buildStrip(ctx);
 
-        // Delegated CTA click — variation-description inner HTML is swapped
-        // on every variation change by inline-variation-description.js, so
-        // we can't bind directly to the <a>.
-        document.addEventListener('click', function (e) {
-            var cta = e.target && e.target.closest
-                ? e.target.closest('[data-open-origin-modal]')
-                : null;
-            if (!cta || !form.contains(cta)) {
-                return;
-            }
-            e.preventDefault();
-            if (dialog.open) {
-                dialog.close();
-            } else {
-                openDialog(ctx);
-            }
-        });
+        // CTA clicks: the opener calls toggle().
 
         // WC variation events → hydrate
         if (window.jQuery) {
@@ -195,6 +197,8 @@
                 }
             }, 200);
         });
+
+        return ctx;
     }
 
     // ── Data helpers ────────────────────────────────────────────
@@ -680,41 +684,3 @@
             el.addEventListener('touchcancel', end, { passive: true });
         });
     }
-
-    // ── Bootstrap ───────────────────────────────────────────────
-
-    function boot() {
-        init();
-        watchForDynamicForms();
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', boot);
-    } else {
-        boot();
-    }
-
-    // Re-init when WooCommerce injects a variation form after initial load
-    // (AJAX-loaded product content, quick-view modals, fragment refreshes).
-    // A debounced MutationObserver keeps this vanilla — fitting this module's
-    // jQuery-optional design — instead of relying on jQuery's `ajaxComplete`.
-    // init() is idempotent (it skips forms already flagged with
-    // data-wc-ras-origin-modal-init), so re-running only touches new forms.
-    function watchForDynamicForms() {
-        if (typeof MutationObserver === 'undefined' || !document.body) return;
-
-        var scheduled = false;
-        var observer = new MutationObserver(function () {
-            if (scheduled) return;
-            // Cheap early-out: only act when an un-initialised form is present.
-            if (!document.querySelector('form.variations_form:not([data-wc-ras-origin-modal-init])')) return;
-            scheduled = true;
-            setTimeout(function () {
-                scheduled = false;
-                init();
-            }, 100);
-        });
-
-        observer.observe(document.body, { childList: true, subtree: true });
-    }
-})();

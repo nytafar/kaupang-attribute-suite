@@ -40,8 +40,12 @@ class Kaupang_Attribute_Suite_Inline_Variation_Description {
      * Constructor
      */
     public function __construct() {
-        // Defer initialization to 'init' hook to ensure theme filters are registered
-        add_action('init', array($this, 'maybe_init'), 20);
+        // After init the theme's filters are registered: run now when loaded late (storefront gate or lazy loader).
+        if (did_action('init')) {
+            $this->maybe_init();
+        } else {
+            add_action('init', array($this, 'maybe_init'), 20);
+        }
     }
 
     /**
@@ -71,8 +75,8 @@ class Kaupang_Attribute_Suite_Inline_Variation_Description {
      * Initialize hooks
      */
     public function init() {
-        // Override WooCommerce variation template to remove description
-        add_filter('wc_get_template', array($this, 'override_variation_template'), 10, 5);
+        // The variation template without the description div: kaupang_attribute_suite_variation_template() in core.php
+        // (Woo prints that template wherever its variation script is enqueued, not only where this module loads).
 
         // Enqueue scripts
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
@@ -82,30 +86,10 @@ class Kaupang_Attribute_Suite_Inline_Variation_Description {
     }
 
     /**
-     * Override WooCommerce variation template to remove description div
-     *
-     * @param string $template      Template path
-     * @param string $template_name Template name
-     * @param array  $args          Template arguments
-     * @param string $template_path Template path
-     * @param string $default_path  Default path
-     * @return string Modified template path
-     */
-    public function override_variation_template($template, $template_name, $args, $template_path, $default_path) {
-        if ($template_name === 'single-product/add-to-cart/variation.php') {
-            $plugin_template = KAUPANG_ATTRIBUTE_SUITE_DIR . 'templates/variation-no-description.php';
-            if (file_exists($plugin_template)) {
-                return $plugin_template;
-            }
-        }
-        return $template;
-    }
-
-    /**
      * Enqueue scripts for inline description updates
      */
     public function enqueue_scripts() {
-        if (!is_product()) {
+        if (!kaupang_attribute_suite_is_variable_product_page()) {
             return;
         }
 
@@ -124,7 +108,7 @@ class Kaupang_Attribute_Suite_Inline_Variation_Description {
             KAUPANG_ATTRIBUTE_SUITE_URL . 'assets/js/inline-variation-description.js',
             array('jquery', 'wc-add-to-cart-variation'),
             $script_version,
-            true
+            array('in_footer' => true, 'strategy' => 'defer')
         );
 
         // Pass configuration to JS

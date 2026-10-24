@@ -12,6 +12,9 @@ $check = function ($ok, $msg) use (&$fail) {
     $fail |= !$ok;
 };
 
+if (function_exists('kaupang_attribute_suite_load')) {
+    kaupang_attribute_suite_load('archived'); // loaded on demand since 2.4 (core.php)
+}
 if (!function_exists('kaupang_attribute_suite_archived_variation_allowed_values')) {
     echo "FAIL archived variations not loaded (plugin inactive or enable_archived_variations off)\n";
     exit(1);
