@@ -74,7 +74,7 @@ function kaupang_attribute_suite_origin_schema_countries($product, $selected = f
  * has a price. Null when nothing is selected, the selection is ambiguous, or origin is not a variation attribute.
  *
  * ponytail: mirrors WC_Structured_Data::get_selected_variation() + count_matching_variations() (both private,
- * Woo 10.x); re-read them when Woo changes how it picks the variation.
+ * Woo 11.2); re-read them when Woo changes how it picks the variation.
  *
  * @param WC_Product_Variable $product Variable product.
  * @return string|null

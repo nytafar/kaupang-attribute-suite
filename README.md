@@ -152,6 +152,9 @@ Opt-in: adds `countryOfOrigin` to the product's JSON-LD Product node. Turn it on
 add_filter('kaupang/attribute-suite/enable_origin_schema', '__return_true');
 ```
 
+Enable it unconditionally (not behind `is_product()` or similar): `tools/load-budget.php` reads the flag in the WP-CLI
+process to budget the module's one extra file on product pages.
+
 The countries come from the product's `pa_opprinnelse` terms that are actually offered (options used only by archived
 variations don't count): term → attribute page (same slug) → its `origin_country` term. All or nothing: if any offered
 origin has no attribute page or no country, nothing is added. One country gives `{"@type":"Country","name":…}`,
