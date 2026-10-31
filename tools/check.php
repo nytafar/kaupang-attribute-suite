@@ -7,7 +7,7 @@
  *   sudo -u <sysuser> wp --path=/var/www/<site>/htdocs \
  *     eval-file wp-content/plugins/kaupang-attribute-suite/tools/check.php
  *
- * Feature checks stay separate: tools/check-attribute-archives.php, check-gtin-links.php, check-archived-variations.php
+ * Feature checks stay separate: tools/check-attribute-archives.php, check-gtin-links.php, check-archived-variations.php, check-origin-schema.php
  * (staging only, writes a fixture product).
  *
  * No declare(strict_types=1): `wp eval-file` evals the source. $GLOBALS, not `global`: eval-file runs inside a method.
@@ -62,7 +62,8 @@ if (!function_exists('kaupang_attribute_suite_load')) {
 // ── Boot: core everywhere; CLI adds only the render/GTIN API. Runs first: later checks load modules. ──
 $included = kas_check_included();
 $on_demand = array('includes/variation-improvements.php', 'includes/inline-variation-description.php', 'includes/archived-variations.php',
-    'includes/variation-gallery-transition.php', 'includes/admin-hooks.php', 'includes/origin/origin-admin.php', 'includes/origin/origin-admin-certifications.php');
+    'includes/variation-gallery-transition.php', 'includes/admin-hooks.php', 'includes/origin/origin-admin.php', 'includes/origin/origin-admin-certifications.php',
+    'includes/origin/origin-schema.php');
 kas_check('core loaded', in_array('includes/core.php', $included, true));
 kas_check('outside wp-admin, no variation/admin module at boot', array_intersect($on_demand, $included) === array(), implode(', ', array_intersect($on_demand, $included)));
 kas_check('CLI has the public API kaupang-trace calls', function_exists('kaupang_attribute_suite_render_origin_sheet') && function_exists('kaupang_attribute_suite_build_origin_struct') && function_exists('kaupang_attribute_suite_load_template') && function_exists('kaupang_attribute_suite_gtin14'));
