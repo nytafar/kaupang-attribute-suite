@@ -126,6 +126,25 @@ try {
     clean_post_cache($parent_id);
     $variable = wc_get_product($parent_id);
 
+    // Variable with two published origins (countries X, Y): a variation URL selects one.
+    $pick = new WC_Product_Variable();
+    $pick->set_name('kaupang check-origin-schema variation-url fixture');
+    $pick->set_status('draft');
+    $pick->set_attributes(array($origin_attr(array('a', 'b'), true)));
+    $pick_id = $pick->save();
+    $ids[]   = $pick_id;
+    foreach (array('a', 'b') as $o) {
+        $v = new WC_Product_Variation();
+        $v->set_parent_id($pick_id);
+        $v->set_attributes(array('pa_opprinnelse' => "kas-schema-{$o}-{$sfx}"));
+        $v->set_regular_price('10');
+        $v->set_status('publish');
+        array_unshift($ids, $v->save());
+    }
+    WC_Product_Variable::sync($pick_id);
+    clean_post_cache($pick_id);
+    $pick = wc_get_product($pick_id);
+
     // 1. Flag off (default): nothing loads, nothing changes.
     $check(!apply_filters('kaupang/attribute-suite/enable_origin_schema', false), 'flag off by default');
     $check(!isset($woo($single)['countryOfOrigin']), 'flag off: Woo Product node unchanged');
@@ -143,6 +162,17 @@ try {
     $check(!isset($woo($partial)['countryOfOrigin']), 'Woo: one unresolved origin → nothing emitted');
     $node = $woo($variable);
     $check(isset($node['countryOfOrigin']) && $node['countryOfOrigin'] === $name('X'), 'Woo: origin used only by an archived variation excluded');
+    $node = $woo($pick);
+    $check(isset($node['countryOfOrigin']) && $node['countryOfOrigin'] === array($name('X'), $name('Y')), 'Woo: product URL lists both variations\' countries');
+    $_GET['attribute_pa_opprinnelse'] = "kas-schema-b-{$sfx}";
+    $node = $woo($pick);
+    $check(isset($node['inProductGroupWithID']), 'Woo: variation URL → Woo describes the selected variation');
+    $check(isset($node['countryOfOrigin']) && $node['countryOfOrigin'] === $name('Y'), 'Woo: variation URL → only the selected variation\'s country');
+    $_GET['attribute_pa_opprinnelse'] = "kas-schema-c-{$sfx}"; // matches no variation: Woo keeps the parent
+    $node = $woo($pick);
+    $check(!isset($node['inProductGroupWithID']) && isset($node['countryOfOrigin']) && $node['countryOfOrigin'] === array($name('X'), $name('Y')), 'Woo: unmatched variation args → parent\'s countries');
+    unset($_GET['attribute_pa_opprinnelse']);
+
     $existing = array('@type' => 'Country', 'name' => 'Set by hand');
     $node     = apply_filters('woocommerce_structured_data_product', array('@type' => 'Product', 'countryOfOrigin' => $existing), $single);
     $check($node['countryOfOrigin'] === $existing, 'Woo: existing countryOfOrigin preserved');
@@ -158,6 +188,7 @@ try {
 } catch (Throwable $e) {
     $check(false, 'exception: ' . $e->getMessage());
 } finally {
+    unset($_GET['attribute_pa_opprinnelse']);
     remove_filter('kaupang/attribute-suite/enable_origin_schema', $flag_on);
     foreach ($ids as $id) {
         wp_delete_post($id, true);

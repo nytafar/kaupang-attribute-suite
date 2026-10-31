@@ -155,7 +155,9 @@ add_filter('kaupang/attribute-suite/enable_origin_schema', '__return_true');
 The countries come from the product's `pa_opprinnelse` terms that are actually offered (options used only by archived
 variations don't count): term → attribute page (same slug) → its `origin_country` term. All or nothing: if any offered
 origin has no attribute page or no country, nothing is added. One country gives `{"@type":"Country","name":…}`,
-several give an array of them. A `countryOfOrigin` already on the node is never overwritten.
+several give an array of them. On a variation URL (every `attribute_*` query arg set, as product feeds link), where
+Woo describes that one variation, only the selected variation's origin counts. A `countryOfOrigin` already on the node
+is never overwritten.
 
 WooCommerce's markup gets it through `woocommerce_structured_data_product`. When Rank Math replaces Woo's markup that
 filter never fires, so the same logic also runs on Rank Math's `rank_math/snippet/rich_snippet_product_entity` (product
@@ -206,7 +208,7 @@ context shows up (decided at `wp` on the storefront, so before `wp_enqueue_scrip
 | Variation data elsewhere (`wc-ajax=get_variation`, quick views, Mix and Match children, REST, CLI) | `variations`, loaded on the first `woocommerce_available_variation` / `woocommerce_ajax_variation_threshold` / `wc_mnm_child_item_details`; `archived` on variation option lists and variable products' attributes table | none | none |
 | wp-admin screens | `admin` (admin-hooks, origin-admin, origin-admin-certifications, archived-variations). Assets on their own screens only: cert picker on `certification` term screens, description nonce + quick-edit script on the `pa_*` term list, archived-variations script on the product edit screen | as listed | none |
 | admin-ajax | `admin` at `admin_init`, logged-in users only (all its handlers are `wp_ajax_*`) | — | none |
-| Product structured data (Woo `woocommerce_structured_data_product`, Rank Math `rank_math/snippet/rich_snippet_product_entity`), only with `enable_origin_schema` on | `schema` (frontend-hooks, archived-variations, origin-schema), loaded when the hook fires | none | none |
+| Product structured data (Woo `woocommerce_structured_data_product`, Rank Math `rank_math/snippet/rich_snippet_product_entity`), only with `enable_origin_schema` on | `schema` (origin-schema, one file; `archived` for variable products, already loaded there by `variations`), loaded when the hook fires. `tools/load-budget.php` adds the file on product pages when the flag is on | none | none |
 | WP-CLI | `sheet` + `gtin` (the public API; kaupang-trace's check calls it) | — | none |
 | REST, cron | core only; modules load through the lazy hooks above | — | none |
 

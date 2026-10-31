@@ -8,6 +8,9 @@
  *   - Adding it to a Product node: WooCommerce's `woocommerce_structured_data_product` and, when Rank Math replaces
  *     Woo's markup, `rank_math/snippet/rich_snippet_product_entity`.
  *
+ * On a variation URL (every `attribute_*` query arg set), where Woo describes the one selected variation, only that
+ * variation's origin counts.
+ *
  * All or nothing: every offered origin must resolve to a country, else the node is left as is. A `countryOfOrigin`
  * already on the node (set in Rank Math, say) is never overwritten.
  *
@@ -33,10 +36,17 @@ function kaupang_attribute_suite_origin_schema_countries($product) {
         return null;
     }
 
-    $slugs   = wc_get_product_terms($product->get_id(), 'pa_opprinnelse', array('fields' => 'slugs'));
-    $allowed = kaupang_attribute_suite_archived_variation_allowed_values($product);
-    if (isset($allowed['pa_opprinnelse'])) {
-        $slugs = array_intersect($slugs, $allowed['pa_opprinnelse']);
+    $slugs = wc_get_product_terms($product->get_id(), 'pa_opprinnelse', array('fields' => 'slugs'));
+    if ($product->is_type('variable')) {
+        kaupang_attribute_suite_load('archived'); // already loaded on variable product pages (module `variations`)
+        $allowed = kaupang_attribute_suite_archived_variation_allowed_values($product);
+        if (isset($allowed['pa_opprinnelse'])) {
+            $slugs = array_intersect($slugs, $allowed['pa_opprinnelse']);
+        }
+        $selected = kaupang_attribute_suite_origin_schema_selected_origin($product);
+        if (null !== $selected) {
+            $slugs = array_intersect($slugs, array($selected)); // a value outside the offered origins claims nothing
+        }
     }
     if (!$slugs) {
         return null;
@@ -54,6 +64,58 @@ function kaupang_attribute_suite_origin_schema_countries($product) {
     }
 
     return 1 === count($countries) ? reset($countries) : array_values($countries);
+}
+
+/**
+ * The origin (`pa_opprinnelse` slug) of the single variation the request selects, as WooCommerce picks it for its
+ * Product node: every variation attribute set in the query string, exactly one published variation matching, and it
+ * has a price. Null when nothing is selected, the selection is ambiguous, or origin is not a variation attribute.
+ *
+ * ponytail: mirrors WC_Structured_Data::get_selected_variation() + count_matching_variations() (both private,
+ * Woo 10.x); re-read them when Woo changes how it picks the variation.
+ *
+ * @param WC_Product_Variable $product Variable product.
+ * @return string|null
+ */
+function kaupang_attribute_suite_origin_schema_selected_origin($product) {
+    $attributes = $product->get_variation_attributes();
+    if (empty($attributes['pa_opprinnelse']) || '' === $product->get_price()) {
+        return null;
+    }
+
+    $match = array();
+    foreach (array_keys($attributes) as $name) {
+        $key = wc_variation_attribute_name($name);
+        if (!isset($_GET[$key]) || '' === $_GET[$key]) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            return null;
+        }
+        $match[$key] = wc_clean(wp_unslash($_GET[$key])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+    }
+
+    $variation_id = WC_Data_Store::load('product')->find_matching_product_variation($product, $match);
+    if (!$variation_id) {
+        return null;
+    }
+
+    $count = 0;
+    foreach ($product->get_children() as $child_id) {
+        $child = wc_get_product($child_id);
+        if (!$child instanceof WC_Product_Variation || 'publish' !== $child->get_status()) {
+            continue;
+        }
+        foreach ($child->get_variation_attributes() as $key => $value) {
+            if ('' !== $value && (!isset($match[$key]) || $match[$key] !== $value)) {
+                continue 2;
+            }
+        }
+        $count++;
+    }
+    $variation = wc_get_product($variation_id);
+    if (1 !== $count || !$variation instanceof WC_Product_Variation || '' === $variation->get_price()) {
+        return null;
+    }
+
+    return $match['attribute_pa_opprinnelse'];
 }
 
 /**

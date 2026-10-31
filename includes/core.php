@@ -27,7 +27,7 @@ function kaupang_attribute_suite_load(...$modules) {
         'gtin'       => array('gtin-links.php'),
         'admin'      => array('admin-hooks.php', 'origin/origin-admin.php', 'origin/origin-admin-certifications.php', 'archived-variations.php'),
         // countryOfOrigin on the Product JSON-LD node (opt-in flag, see kaupang_attribute_suite_lazy_origin_schema()).
-        'schema'     => array('frontend-hooks.php', 'archived-variations.php', 'origin/origin-schema.php'),
+        'schema'     => array('origin/origin-schema.php'),
     );
     foreach ($modules as $module) {
         foreach ($map[$module] as $file) {
@@ -415,6 +415,28 @@ function kaupang_attribute_suite_get_attribute_page($term_slug) {
     }
 
     return $page_id ? get_post($page_id) : null;
+}
+
+/**
+ * Get cached attribute_page by term slug.
+ *
+ * Cache group `kaupang_attribute_suite_attribute_page` — kept in sync with the legacy
+ * `kaupang_attribute_suite_attribute_pages` group by kaupang_attribute_suite_invalidate_attribute_page_cache.
+ *
+ * @param string $slug The attribute term slug.
+ * @return WP_Post|null The attribute page or null if not found.
+ */
+function kaupang_attribute_suite_get_cached_attribute_page($slug) {
+    $key = 'attribute_page_' . md5($slug);
+    $cached = wp_cache_get($key, 'kaupang_attribute_suite_attribute_page');
+
+    if ($cached === false) {
+        $post = get_page_by_path($slug, OBJECT, 'attribute_page');
+        $cached = $post ? $post->ID : 0;
+        wp_cache_set($key, $cached, 'kaupang_attribute_suite_attribute_page', HOUR_IN_SECONDS);
+    }
+
+    return $cached ? get_post($cached) : null;
 }
 
 /**
