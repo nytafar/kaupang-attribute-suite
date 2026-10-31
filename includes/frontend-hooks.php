@@ -3,8 +3,6 @@
  * Frontend Hooks
  *
  * Owns (module `variations` / `sheet`, see core.php):
- *   - Cached attribute_page lookup helper used by variation preload and
- *     everywhere we resolve a term slug to its rich-content CPT post.
  *   - Variation preload: injects the full `wc_ras_origin` struct into
  *     `woocommerce_available_variation` so blurb/modal can render without
  *     extra round-trips.
@@ -33,28 +31,6 @@ function kaupang_attribute_suite_force_client_side_variations_threshold($thresho
     return max((int) $threshold, count($product->get_children()));
 }
 add_filter('woocommerce_ajax_variation_threshold', 'kaupang_attribute_suite_force_client_side_variations_threshold', 99, 2);
-
-/**
- * Get cached attribute_page by term slug.
- *
- * Cache group `kaupang_attribute_suite_attribute_page` — kept in sync with the legacy
- * `kaupang_attribute_suite_attribute_pages` group by kaupang_attribute_suite_invalidate_attribute_page_cache.
- *
- * @param string $slug The attribute term slug.
- * @return WP_Post|null The attribute page or null if not found.
- */
-function kaupang_attribute_suite_get_cached_attribute_page($slug) {
-    $key = 'attribute_page_' . md5($slug);
-    $cached = wp_cache_get($key, 'kaupang_attribute_suite_attribute_page');
-
-    if ($cached === false) {
-        $post = get_page_by_path($slug, OBJECT, 'attribute_page');
-        $cached = $post ? $post->ID : 0;
-        wp_cache_set($key, $cached, 'kaupang_attribute_suite_attribute_page', HOUR_IN_SECONDS);
-    }
-
-    return $cached ? get_post($cached) : null;
-}
 
 /**
  * Build the full wc_ras_origin struct for an attribute_page post.

@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the editor asks for it.
 
 ### Added
+- Opt-in origin schema (attribute-suite#3): with `kaupang/attribute-suite/enable_origin_schema` on, the product's
+  JSON-LD Product node gets `countryOfOrigin` from its offered origins' attribute pages (`origin_country`), via
+  `woocommerce_structured_data_product` and Rank Math's `rank_math/snippet/rich_snippet_product_entity`. Only when
+  every offered origin resolves to a country; on a variation URL Woo's node gets only the selected variation's origin
+  (Rank Math's parent entity keeps the full set); an existing `countryOfOrigin` is kept. Check:
+  `tools/check-origin-schema.php`.
 - `tools/check.php` (loading, registration, cross-context hooks, admin foreign-screen rule, storefront budget) and
   `tools/load-budget.php`; README "Load map".
 

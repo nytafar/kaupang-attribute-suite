@@ -144,6 +144,30 @@ echo kaupang_attribute_suite_render_origin_sheet(kaupang_attribute_suite_build_o
 // → <section class="wc-ras-origin-modal wc-ras-origin-modal--inline" …>
 ```
 
+#### Origin country in structured data
+
+Opt-in: adds `countryOfOrigin` to the product's JSON-LD Product node. Turn it on from the theme:
+
+```php
+add_filter('kaupang/attribute-suite/enable_origin_schema', '__return_true');
+```
+
+Enable it unconditionally (not behind `is_product()` or similar): `tools/load-budget.php` reads the flag in the WP-CLI
+process to budget the module's one extra file on product pages.
+
+The countries come from the product's `pa_opprinnelse` terms that are actually offered (options used only by archived
+variations don't count): term → attribute page (same slug) → its `origin_country` term. All or nothing: if any offered
+origin has no attribute page or no country, nothing is added. One country gives `{"@type":"Country","name":…}`,
+several give an array of them. On a variation URL (every `attribute_*` query arg set, as product feeds link), where
+Woo describes that one variation, only the selected variation's origin counts in Woo's node; Rank Math's entity always
+describes the parent, so it keeps the parent's full set. A `countryOfOrigin` already on the node
+is never overwritten.
+
+WooCommerce's markup gets it through `woocommerce_structured_data_product`. When Rank Math replaces Woo's markup that
+filter never fires, so the same logic also runs on Rank Math's `rank_math/snippet/rich_snippet_product_entity` (product
+from the current post); a country set by hand in Rank Math wins. Check (staging, writes fixtures):
+`tools/check-origin-schema.php`.
+
 ## 🧩 Hooks and Filters
 
 ### Attribute Page Hooks
@@ -168,6 +192,7 @@ echo kaupang_attribute_suite_render_origin_sheet(kaupang_attribute_suite_build_o
 | `kaupang_attribute_suite_inline_variation_description_config` | Configure inline description behavior (target_attribute, auto_detect) |
 | `kaupang_attribute_suite_inline_description_animation_duration` | Animation duration in ms for showing/hiding inline description (default: 200) |
 | `kaupang/attribute-suite/enable_archived_variations` | Treat disabled (private) variations as archived: hide their options on the storefront and from the admin Variations list, with a "Vis arkiverte (N)" toggle (default: true). Check: `tools/check-archived-variations.php` |
+| `kaupang/attribute-suite/enable_origin_schema` | Add `countryOfOrigin` to the Product JSON-LD node (Woo and Rank Math), only when every offered origin resolves to a country (default: false, must be enabled by theme). Check: `tools/check-origin-schema.php` |
 
 ## Load map
 
@@ -187,6 +212,7 @@ context shows up (decided at `wp` on the storefront, so before `wp_enqueue_scrip
 | Variation data elsewhere (`wc-ajax=get_variation`, quick views, Mix and Match children, REST, CLI) | `variations`, loaded on the first `woocommerce_available_variation` / `woocommerce_ajax_variation_threshold` / `wc_mnm_child_item_details`; `archived` on variation option lists and variable products' attributes table | none | none |
 | wp-admin screens | `admin` (admin-hooks, origin-admin, origin-admin-certifications, archived-variations). Assets on their own screens only: cert picker on `certification` term screens, description nonce + quick-edit script on the `pa_*` term list, archived-variations script on the product edit screen | as listed | none |
 | admin-ajax | `admin` at `admin_init`, logged-in users only (all its handlers are `wp_ajax_*`) | — | none |
+| Product structured data (Woo `woocommerce_structured_data_product`, Rank Math `rank_math/snippet/rich_snippet_product_entity`), only with `enable_origin_schema` on | `schema` (origin-schema, one file; `archived` for variable products, already loaded there by `variations`), loaded when the hook fires. `tools/load-budget.php` adds the file on product pages when the flag is on | none | none |
 | WP-CLI | `sheet` + `gtin` (the public API; kaupang-trace's check calls it) | — | none |
 | REST, cron | core only; modules load through the lazy hooks above | — | none |
 

@@ -14,7 +14,7 @@ defined('ABSPATH') || exit;
 /**
  * Load modules (idempotent). Files only define functions/classes and add their own hooks.
  *
- * @param string ...$modules variations | archived | gallery | sheet | gtin | admin
+ * @param string ...$modules variations | archived | gallery | sheet | gtin | admin | schema
  */
 function kaupang_attribute_suite_load(...$modules) {
     static $map = array(
@@ -26,6 +26,8 @@ function kaupang_attribute_suite_load(...$modules) {
         'sheet'      => array('template-loader.php', 'frontend-hooks.php', 'origin/origin-render.php', 'origin/origin-frontend.php'),
         'gtin'       => array('gtin-links.php'),
         'admin'      => array('admin-hooks.php', 'origin/origin-admin.php', 'origin/origin-admin-certifications.php', 'archived-variations.php'),
+        // countryOfOrigin on the Product JSON-LD node (opt-in flag, see kaupang_attribute_suite_lazy_origin_schema()).
+        'schema'     => array('origin/origin-schema.php'),
     );
     foreach ($modules as $module) {
         foreach ($map[$module] as $file) {
@@ -147,6 +149,25 @@ function kaupang_attribute_suite_variation_template($template, $template_name) {
     return $template;
 }
 add_filter('wc_get_template', 'kaupang_attribute_suite_variation_template', 10, 2);
+
+/**
+ * Origin schema (opt-in): `countryOfOrigin` on the Product node, from Woo's markup or, when Rank Math replaces it,
+ * Rank Math's Product entity. The flag is read here, at hook time (theme filters are added after plugins_loaded);
+ * with it off the module never loads.
+ *
+ * @param array|mixed           $node    Product node.
+ * @param WC_Product|mixed|null $product Woo passes the product; Rank Math does not (null = current post).
+ * @return array|mixed
+ */
+function kaupang_attribute_suite_lazy_origin_schema($node, $product = null) {
+    if (!apply_filters('kaupang/attribute-suite/enable_origin_schema', false)) {
+        return $node;
+    }
+    kaupang_attribute_suite_load('schema');
+    return kaupang_attribute_suite_origin_schema_add($node, $product);
+}
+add_filter('woocommerce_structured_data_product', 'kaupang_attribute_suite_lazy_origin_schema', 10, 2);
+add_filter('rank_math/snippet/rich_snippet_product_entity', 'kaupang_attribute_suite_lazy_origin_schema', 10, 1);
 
 // ── Rewrite rules ───────────────────────────────────────────────────────────
 
@@ -394,6 +415,28 @@ function kaupang_attribute_suite_get_attribute_page($term_slug) {
     }
 
     return $page_id ? get_post($page_id) : null;
+}
+
+/**
+ * Get cached attribute_page by term slug.
+ *
+ * Cache group `kaupang_attribute_suite_attribute_page` — kept in sync with the legacy
+ * `kaupang_attribute_suite_attribute_pages` group by kaupang_attribute_suite_invalidate_attribute_page_cache.
+ *
+ * @param string $slug The attribute term slug.
+ * @return WP_Post|null The attribute page or null if not found.
+ */
+function kaupang_attribute_suite_get_cached_attribute_page($slug) {
+    $key = 'attribute_page_' . md5($slug);
+    $cached = wp_cache_get($key, 'kaupang_attribute_suite_attribute_page');
+
+    if ($cached === false) {
+        $post = get_page_by_path($slug, OBJECT, 'attribute_page');
+        $cached = $post ? $post->ID : 0;
+        wp_cache_set($key, $cached, 'kaupang_attribute_suite_attribute_page', HOUR_IN_SECONDS);
+    }
+
+    return $cached ? get_post($cached) : null;
 }
 
 /**
