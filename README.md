@@ -156,7 +156,8 @@ The countries come from the product's `pa_opprinnelse` terms that are actually o
 variations don't count): term → attribute page (same slug) → its `origin_country` term. All or nothing: if any offered
 origin has no attribute page or no country, nothing is added. One country gives `{"@type":"Country","name":…}`,
 several give an array of them. On a variation URL (every `attribute_*` query arg set, as product feeds link), where
-Woo describes that one variation, only the selected variation's origin counts. A `countryOfOrigin` already on the node
+Woo describes that one variation, only the selected variation's origin counts in Woo's node; Rank Math's entity always
+describes the parent, so it keeps the parent's full set. A `countryOfOrigin` already on the node
 is never overwritten.
 
 WooCommerce's markup gets it through `woocommerce_structured_data_product`. When Rank Math replaces Woo's markup that

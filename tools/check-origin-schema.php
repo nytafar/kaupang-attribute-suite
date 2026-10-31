@@ -168,6 +168,8 @@ try {
     $node = $woo($pick);
     $check(isset($node['inProductGroupWithID']), 'Woo: variation URL → Woo describes the selected variation');
     $check(isset($node['countryOfOrigin']) && $node['countryOfOrigin'] === $name('Y'), 'Woo: variation URL → only the selected variation\'s country');
+    $node = $rank_math($pick);
+    $check(isset($node['countryOfOrigin']) && $node['countryOfOrigin'] === array($name('X'), $name('Y')), 'Rank Math entity: variation URL → still the parent\'s countries');
     $_GET['attribute_pa_opprinnelse'] = "kas-schema-c-{$sfx}"; // matches no variation: Woo keeps the parent
     $node = $woo($pick);
     $check(!isset($node['inProductGroupWithID']) && isset($node['countryOfOrigin']) && $node['countryOfOrigin'] === array($name('X'), $name('Y')), 'Woo: unmatched variation args → parent\'s countries');

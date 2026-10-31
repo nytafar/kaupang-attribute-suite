@@ -8,8 +8,9 @@
  *   - Adding it to a Product node: WooCommerce's `woocommerce_structured_data_product` and, when Rank Math replaces
  *     Woo's markup, `rank_math/snippet/rich_snippet_product_entity`.
  *
- * On a variation URL (every `attribute_*` query arg set), where Woo describes the one selected variation, only that
- * variation's origin counts.
+ * The node's subject gets that subject's countries: on a variation URL (every `attribute_*` query arg set), where Woo
+ * describes the one selected variation, only that variation's origin counts; Rank Math's entity always describes the
+ * parent and its full offers, so it gets the parent's complete set.
  *
  * All or nothing: every offered origin must resolve to a country, else the node is left as is. A `countryOfOrigin`
  * already on the node (set in Rank Math, say) is never overwritten.
@@ -28,10 +29,11 @@ defined('ABSPATH') || exit;
  * `countryOfOrigin` value for a product: one Country object, an array of them for several distinct countries, or null
  * when the product has no origins or any offered origin lacks an attribute page with an `origin_country` term.
  *
- * @param WC_Product|mixed $product The product.
+ * @param WC_Product|mixed $product   The product.
+ * @param bool             $selected  Narrow to the variation the request selects (Woo's node), not the whole product.
  * @return array|null
  */
-function kaupang_attribute_suite_origin_schema_countries($product) {
+function kaupang_attribute_suite_origin_schema_countries($product, $selected = false) {
     if (!$product instanceof WC_Product) {
         return null;
     }
@@ -43,9 +45,9 @@ function kaupang_attribute_suite_origin_schema_countries($product) {
         if (isset($allowed['pa_opprinnelse'])) {
             $slugs = array_intersect($slugs, $allowed['pa_opprinnelse']);
         }
-        $selected = kaupang_attribute_suite_origin_schema_selected_origin($product);
-        if (null !== $selected) {
-            $slugs = array_intersect($slugs, array($selected)); // a value outside the offered origins claims nothing
+        $origin = $selected ? kaupang_attribute_suite_origin_schema_selected_origin($product) : null;
+        if (null !== $origin) {
+            $slugs = array_intersect($slugs, array($origin)); // a value outside the offered origins claims nothing
         }
     }
     if (!$slugs) {
@@ -122,18 +124,19 @@ function kaupang_attribute_suite_origin_schema_selected_origin($product) {
  * Add `countryOfOrigin` to a Product node unless it already has one.
  *
  * @param array|mixed           $node    Product node (Woo markup or Rank Math entity).
- * @param WC_Product|mixed|null $product The product; null = the current post (Rank Math passes no product).
+ * @param WC_Product|mixed|null $product The product (Woo); null = the current post, the parent (Rank Math passes none).
  * @return array|mixed
  */
 function kaupang_attribute_suite_origin_schema_add($node, $product = null) {
     if (!is_array($node) || isset($node['countryOfOrigin'])) {
         return $node;
     }
-    if (null === $product) {
+    $woo = null !== $product; // only Woo's node narrows to a selected variation
+    if (!$woo) {
         $product = wc_get_product(get_the_ID());
     }
 
-    $country = kaupang_attribute_suite_origin_schema_countries($product);
+    $country = kaupang_attribute_suite_origin_schema_countries($product, $woo);
     if (null !== $country) {
         $node['countryOfOrigin'] = $country;
     }
