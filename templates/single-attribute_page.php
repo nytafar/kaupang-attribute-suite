@@ -6,6 +6,9 @@
  * WP template hierarchy (single-attribute_page.php in the active theme).
  *
  * Structure:
+ *   <main id="content" class="content"> — same page parent as the theme's
+ *     page.php, so the theme's content-parent rules (width, block-gap
+ *     rhythm) and its skip link reach this page.
  *   <article>
  *     <div class="header"> — complex grid (NB: <div>, ikke <header>,
  *       fordi mange WP-temaer (inkl. ousia) har header>* / section>*-
@@ -27,7 +30,9 @@
 defined('ABSPATH') || exit;
 
 get_header();
-
+?>
+<main id="content" class="content">
+<?php
 while (have_posts()) :
     the_post();
 
@@ -209,5 +214,7 @@ while (have_posts()) :
     </article>
     <?php
 endwhile;
-
+?>
+</main>
+<?php
 get_footer();
