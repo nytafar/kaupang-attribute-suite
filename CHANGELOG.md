@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Editorial flow (2026-11-05, dc83dc9): the origin single renders inside `<main id="content" class="content">`,
+  the same page parent as the theme's `page.php`. The theme's content-parent rules (width, block-gap rhythm)
+  now reach attribute pages, and the skip link to `#content` resolves (it pointed nowhere before). Visually
+  neutral on peru-qori-inti until its page CSS compensation is removed.
 - Loading precision (docs/loading, attribute-suite#2): a guest page that renders nothing of ours loads the main file,
   `includes/core.php` and the catalogue (was 18 includes). CPT/taxonomy/meta registration, the block pattern, rewrite
   rules and cache invalidation moved into `core.php` (every context); everything else is a module loaded where it is
