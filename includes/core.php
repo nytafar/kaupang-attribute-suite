@@ -944,6 +944,88 @@ function kaupang_attribute_suite_flush_origin_counts($post_id, $slugs = null) {
     foreach ((array) $slugs as $slug) {
         wp_cache_delete('origin_active_product_ids_' . md5($slug), 'kaupang_attribute_suite_origin');
     }
+    kaupang_attribute_suite_queue_origin_purge($slugs);
+}
+
+// ── Page cache ──────────────────────────────────────────────────────────────
+
+/**
+ * Queue origins whose cached pages show a count, a strip or a status that just changed. Purged once at shutdown:
+ * a save that touches several variations collapses to one purge per URL.
+ *
+ * @param string[] $slugs pa_opprinnelse slugs.
+ */
+function kaupang_attribute_suite_queue_origin_purge($slugs) {
+    $slugs = array_filter(array_map('strval', (array) $slugs));
+    if (!$slugs) {
+        return;
+    }
+    if (empty($GLOBALS['kaupang_attribute_suite_purge_queue'])) {
+        $GLOBALS['kaupang_attribute_suite_purge_queue'] = array();
+        add_action('shutdown', 'kaupang_attribute_suite_purge_origin_pages');
+    }
+    foreach ($slugs as $slug) {
+        $GLOBALS['kaupang_attribute_suite_purge_queue'][$slug] = true;
+    }
+}
+
+/**
+ * The cached URLs that show an origin: its published page, its term archive (where the attribute has archives),
+ * and the index /opprinnelser/.
+ *
+ * @param string[] $slugs pa_opprinnelse slugs.
+ * @return string[]
+ */
+function kaupang_attribute_suite_origin_purge_urls($slugs) {
+    $urls = array();
+    foreach ((array) $slugs as $slug) {
+        $page = kaupang_attribute_suite_get_cached_attribute_page($slug);
+        if ($page && 'publish' === $page->post_status) {
+            $urls[] = (string) get_permalink($page);
+        }
+        $term = taxonomy_exists('pa_opprinnelse') && is_taxonomy_viewable('pa_opprinnelse')
+            ? get_term_by('slug', $slug, 'pa_opprinnelse') : null;
+        if ($term instanceof WP_Term) {
+            $link = get_term_link($term);
+            if (!is_wp_error($link)) {
+                $urls[] = (string) $link;
+            }
+        }
+    }
+    if ($slugs) {
+        $urls[] = (string) get_post_type_archive_link('attribute_page');
+    }
+    return array_values(array_unique(array_filter($urls)));
+}
+
+/**
+ * Shutdown: purge the queued origins' URLs through Nginx Helper (FastCGI or Redis, whichever the site runs), as
+ * kaupang-stock's PageCache does. Another page cache hooks `kaupang/attribute-suite/purge_origin_urls`.
+ *
+ * @return string[] URLs purged (for the check).
+ */
+function kaupang_attribute_suite_purge_origin_pages() {
+    global $nginx_purger;
+
+    $slugs = array_keys((array) ($GLOBALS['kaupang_attribute_suite_purge_queue'] ?? array()));
+    $GLOBALS['kaupang_attribute_suite_purge_queue'] = array();
+    if (!$slugs) {
+        return array();
+    }
+    $urls = kaupang_attribute_suite_origin_purge_urls($slugs);
+    if (is_object($nginx_purger) && method_exists($nginx_purger, 'purge_url')) {
+        foreach ($urls as $url) {
+            $nginx_purger->purge_url($url);
+        }
+    }
+    /**
+     * Origin pages to purge from a page cache.
+     *
+     * @param string[] $urls  Page, term archive and index URLs.
+     * @param string[] $slugs pa_opprinnelse slugs that changed.
+     */
+    do_action('kaupang/attribute-suite/purge_origin_urls', $urls, $slugs);
+    return $urls;
 }
 
 // Anything that changes which products an origin counts: status (incl. trash/untrash), deletion, a variation's
@@ -951,6 +1033,10 @@ function kaupang_attribute_suite_flush_origin_counts($post_id, $slugs = null) {
 add_action('transition_post_status', function ($new_status, $old_status, $post) {
     if ($new_status !== $old_status && in_array($post->post_type, array('product', 'product_variation'), true)) {
         kaupang_attribute_suite_flush_origin_counts($post->ID);
+    }
+    // An origin page published or taken down moves the term archive's redirect and the index's links.
+    if ($new_status !== $old_status && 'attribute_page' === $post->post_type && ('publish' === $new_status || 'publish' === $old_status)) {
+        kaupang_attribute_suite_queue_origin_purge(array($post->post_name));
     }
 }, 10, 3);
 add_action('before_delete_post', function ($post_id, $post) {
