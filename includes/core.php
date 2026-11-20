@@ -14,7 +14,7 @@ defined('ABSPATH') || exit;
 /**
  * Load modules (idempotent). Files only define functions/classes and add their own hooks.
  *
- * @param string ...$modules variations | archived | gallery | sheet | gtin | admin | schema
+ * @param string ...$modules variations | archived | gallery | sheet | status | gtin | admin | schema
  */
 function kaupang_attribute_suite_load(...$modules) {
     static $map = array(
@@ -26,6 +26,8 @@ function kaupang_attribute_suite_load(...$modules) {
         'sheet'      => array('template-loader.php', 'frontend-hooks.php', 'origin/origin-render.php', 'origin/origin-status.php', 'origin/origin-frontend.php'),
         'gtin'       => array('gtin-links.php'),
         'admin'      => array('admin-hooks.php', 'origin/origin-admin.php', 'origin/origin-admin-certifications.php', 'archived-variations.php'),
+        // Origin status and the term-archive redirect (no hooks, no output).
+        'status'     => array('origin/origin-render.php', 'origin/origin-status.php'),
         // countryOfOrigin on the Product JSON-LD node (opt-in flag, see kaupang_attribute_suite_lazy_origin_schema()).
         'schema'     => array('origin/origin-schema.php'),
     );
@@ -87,6 +89,25 @@ function kaupang_attribute_suite_route_front() {
     }
 }
 add_action('wp', 'kaupang_attribute_suite_route_front');
+
+/**
+ * One canonical URL per origin: the term archive 301s to the origin's published page, or to /opprinnelser/ for a
+ * former origin without one (origins-architecture §4). Paged and filtered archive URLs go the same way; the page
+ * has no paging. Feeds stay.
+ */
+function kaupang_attribute_suite_origin_term_redirect() {
+    // A page past the last one is a 404, which clears is_tax(): go by the query var there.
+    $slug = (string) get_query_var('pa_opprinnelse');
+    if (is_feed() || $slug === '' || !(is_tax('pa_opprinnelse') || is_404())) {
+        return;
+    }
+    kaupang_attribute_suite_load('status');
+    $url = kaupang_attribute_suite_origin_term_redirect_url(get_term_by('slug', $slug, 'pa_opprinnelse'));
+    if ($url !== '' && wp_safe_redirect($url, 301, 'Kaupang Attribute Suite')) {
+        exit;
+    }
+}
+add_action('template_redirect', 'kaupang_attribute_suite_origin_term_redirect', 1);
 
 /**
  * Variation data can be built anywhere (wc-ajax get_variation, quick views, Mix and Match children, REST, CLI):

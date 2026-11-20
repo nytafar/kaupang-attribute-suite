@@ -167,3 +167,29 @@ function kaupang_attribute_suite_format_sold_period(array $status) {
     $to     = wp_date($format, $last->getTimestamp(), $tz);
     return $from === $to ? $from : $from . ' – ' . $to;
 }
+
+/**
+ * Where an origin's term archive (`/opprinnelse/<slug>/`) sends a visitor: one canonical URL per origin (§4).
+ *
+ *   published page          → the page, whatever the status
+ *   former, no page         → the index /opprinnelser/
+ *   active or unsold, none  → '' (the term archive is the view)
+ *
+ * A draft or private page never redirects.
+ *
+ * @param WP_Term $term pa_opprinnelse term.
+ * @return string Absolute URL, or '' to stay.
+ */
+function kaupang_attribute_suite_origin_term_redirect_url($term) {
+    if (!$term instanceof WP_Term || 'pa_opprinnelse' !== $term->taxonomy) {
+        return '';
+    }
+    $page = kaupang_attribute_suite_get_cached_attribute_page($term->slug);
+    if ($page && 'publish' === $page->post_status) {
+        return (string) get_permalink($page);
+    }
+    if ('former' === kaupang_attribute_suite_origin_status($term->slug)['state']) {
+        return (string) get_post_type_archive_link('attribute_page');
+    }
+    return '';
+}
