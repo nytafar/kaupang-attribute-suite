@@ -27,9 +27,9 @@ define('KAUPANG_ATTRIBUTE_SUITE_DIR', plugin_dir_path(__FILE__));
 define('KAUPANG_ATTRIBUTE_SUITE_URL', plugin_dir_url(__FILE__));
 
 // Declare HPOS (custom order tables) and cart/checkout blocks compatibility.
-// This plugin never reads or writes order data, and only hooks the single
-// product page (variations, gallery thumbnails, attribute taxonomies), so
-// neither order storage nor the block cart/checkout is affected.
+// The only order data it touches is one read: when each origin sold (origin status,
+// includes/origin/origin-status.php), against whichever order table is authoritative.
+// It never writes orders and doesn't hook the cart or checkout.
 add_action('before_woocommerce_init', function () {
     if (class_exists(\Automattic\WooCommerce\Utilities\FeaturesUtil::class)) {
         \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);

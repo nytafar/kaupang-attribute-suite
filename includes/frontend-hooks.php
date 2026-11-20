@@ -67,6 +67,7 @@ add_filter('woocommerce_ajax_variation_threshold', 'kaupang_attribute_suite_forc
  *     'certifications'       => array(array('slug' => 'organic', 'name' => 'Organic', 'icon_url' => '...'), ...),
  *     'featured_image_url'   => 'https://...' | null,
  *     'has_rich_page'        => true,
+ *     'status'               => array('state' => 'active', 'active_products' => 3, 'first_sold' => '2025-06-18', 'last_sold' => '2026-11-17'),
  *   )
  *
  * The `*_label` / `*_value` fields are derived (formatted + translated)
@@ -211,6 +212,11 @@ function kaupang_attribute_suite_build_origin_struct($page) {
         'featured_image_url'   => $featured_image_url,
 
         'has_rich_page'        => true,
+
+        // active / former / unsold + sold dates (origin-status.php), the same answer everywhere.
+        'status'               => function_exists('kaupang_attribute_suite_origin_status')
+            ? kaupang_attribute_suite_origin_status($page->post_name)
+            : null,
     );
 
     /**

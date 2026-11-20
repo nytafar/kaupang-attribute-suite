@@ -19,11 +19,11 @@ defined('ABSPATH') || exit;
 function kaupang_attribute_suite_load(...$modules) {
     static $map = array(
         // Variation data + description fallback + inline description + archived options (any context that builds variation data).
-        'variations' => array('template-loader.php', 'frontend-hooks.php', 'origin/origin-render.php', 'variation-improvements.php', 'inline-variation-description.php', 'archived-variations.php'),
+        'variations' => array('template-loader.php', 'frontend-hooks.php', 'origin/origin-render.php', 'origin/origin-status.php', 'variation-improvements.php', 'inline-variation-description.php', 'archived-variations.php'),
         'archived'   => array('archived-variations.php'),
         'gallery'    => array('variation-gallery-transition.php'),
         // Origin card/modal, origin pages (template_include, origin.css) and the public render API kaupang-trace calls.
-        'sheet'      => array('template-loader.php', 'frontend-hooks.php', 'origin/origin-render.php', 'origin/origin-frontend.php'),
+        'sheet'      => array('template-loader.php', 'frontend-hooks.php', 'origin/origin-render.php', 'origin/origin-status.php', 'origin/origin-frontend.php'),
         'gtin'       => array('gtin-links.php'),
         'admin'      => array('admin-hooks.php', 'origin/origin-admin.php', 'origin/origin-admin-certifications.php', 'archived-variations.php'),
         // countryOfOrigin on the Product JSON-LD node (opt-in flag, see kaupang_attribute_suite_lazy_origin_schema()).
@@ -930,6 +930,62 @@ add_action('set_object_terms', function ($object_id, $terms, $tt_ids, $taxonomy,
     }
     kaupang_attribute_suite_flush_origin_counts($object_id, $slugs);
 }, 10, 6);
+
+// ── Origin previous slugs ───────────────────────────────────────────────────
+
+// Order lines keep the slug an origin had when it sold, so a renamed pa_opprinnelse term keeps its old slugs in
+// `previous_slugs` (one row each) and the sales aggregate (origin-status.php) folds them in. Any context can rename.
+add_action('init', function () {
+    if (taxonomy_exists('pa_opprinnelse')) {
+        register_term_meta('pa_opprinnelse', 'previous_slugs', array(
+            'type'              => 'string',
+            'description'       => __('Slugs this origin had before (order lines keep the old one).', 'kaupang-attribute-suite'),
+            'single'            => false,
+            'show_in_rest'      => false,
+            'sanitize_callback' => 'sanitize_title',
+        ));
+    }
+}, 20);
+
+/**
+ * Remember a pa_opprinnelse term's slug before an update (edit_terms fires before the write).
+ *
+ * @param int    $term_id  Term ID.
+ * @param string $taxonomy Taxonomy.
+ */
+function kaupang_attribute_suite_remember_origin_slug($term_id, $taxonomy) {
+    if ('pa_opprinnelse' === $taxonomy) {
+        $term = get_term($term_id, $taxonomy);
+        $GLOBALS['kaupang_attribute_suite_origin_slug_before'][$term_id] = $term instanceof WP_Term ? $term->slug : '';
+    }
+}
+add_action('edit_terms', 'kaupang_attribute_suite_remember_origin_slug', 10, 2);
+
+/**
+ * After the update: a changed slug goes on `previous_slugs`; a slug the term takes back comes off it.
+ *
+ * @param int    $term_id  Term ID.
+ * @param int    $tt_id    Term taxonomy ID.
+ * @param string $taxonomy Taxonomy.
+ */
+function kaupang_attribute_suite_record_previous_origin_slug($term_id, $tt_id, $taxonomy) {
+    if ('pa_opprinnelse' !== $taxonomy || !isset($GLOBALS['kaupang_attribute_suite_origin_slug_before'][$term_id])) {
+        return;
+    }
+    $old = $GLOBALS['kaupang_attribute_suite_origin_slug_before'][$term_id];
+    unset($GLOBALS['kaupang_attribute_suite_origin_slug_before'][$term_id]);
+    $term = get_term($term_id, $taxonomy);
+    if (!$term instanceof WP_Term || $old === '' || $old === $term->slug) {
+        return;
+    }
+    $previous = (array) get_term_meta($term_id, 'previous_slugs', false);
+    if (!in_array($old, $previous, true)) {
+        add_term_meta($term_id, 'previous_slugs', $old);
+    }
+    delete_term_meta($term_id, 'previous_slugs', $term->slug);
+    delete_transient('kaupang_attribute_suite_origin_sales');
+}
+add_action('edited_term', 'kaupang_attribute_suite_record_previous_origin_slug', 10, 3);
 
 // ── Block pattern ───────────────────────────────────────────────────────────
 
