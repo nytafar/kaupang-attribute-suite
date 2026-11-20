@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Flags for Venezuela, Tanzania, Belize, Ecuador, Colombia, Guatemala and Vietnam (`assets/flags/<slug>.svg`, from
-  Wikimedia Commons, public domain), beside Peru and Nicaragua (#11). Brasil is still missing.
+- Flags for Venezuela, Tanzania, Belize, Ecuador, Colombia, Guatemala, Vietnam and Brasil (`assets/flags/<slug>.svg`,
+  from Wikimedia Commons, public domain), beside Peru and Nicaragua (#11).
 - Origins (kaupang-attribute-suite#7, design: kaupang-docs `kaupang-attribute-suite/origins-architecture-2026-11-20.md`):
   - Status per origin, derived: `active` (≥ 1 active product), `former` (none, sold before) or `unsold`.
     `kaupang_attribute_suite_origin_status($slug)` returns it with `first_sold`/`last_sold`, from one aggregate over
