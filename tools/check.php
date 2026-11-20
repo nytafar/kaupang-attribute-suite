@@ -266,7 +266,7 @@ if (taxonomy_exists('pa_opprinnelse')) {
         ob_start();
         kaupang_attribute_suite_render_origin_products(array('slug' => $kas_slug, 'status' => kaupang_attribute_suite_origin_status($kas_slug)));
         $kas_html = ob_get_clean();
-        kas_check('active origin page renders the product strip', substr_count($kas_html, '<li>') === count($kas_items) && strpos($kas_html, 'wc-ras-origin-products') !== false);
+        kas_check('active origin page renders the product strip', preg_match_all('/<li[\s>]/', $kas_html) === count($kas_items) && strpos($kas_html, 'wc-ras-origin-products') !== false);
     }
     if ($kas_by['former']) {
         ob_start();
