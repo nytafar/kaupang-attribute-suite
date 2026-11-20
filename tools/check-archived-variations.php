@@ -160,8 +160,9 @@ try {
         $check($listed === $counted, "origin {$origin->slug}: count {$counted} = archive {$listed}");
     }
 
-    // Count cache follows a deletion without a manual flush. Needs a *published* product (the count is publish-only):
-    // catalog-hidden, on an origin with no products, alive for a moment only.
+    // Count cache follows a deletion without a manual flush. Needs a *published* product that the count includes
+    // (publish-only, and catalog-hidden products don't count since #7): hidden from search, on an origin with no
+    // products, alive for a moment only.
     $origin_slug = 'peru-nativo-blanco';
     $origin_term = get_term_by('slug', $origin_slug, 'pa_opprinnelse');
     $baseline    = $origin_term ? kaupang_attribute_suite_origin_product_count($origin_slug) : -1;
@@ -171,7 +172,7 @@ try {
     } elseif ($origin_term && 0 === $baseline) {
         $live = new WC_Product_Variable();
         $live->set_name('kaupang check-archived-variations count fixture');
-        $live->set_catalog_visibility('hidden');
+        $live->set_catalog_visibility('catalog');
         $origin_attr = new WC_Product_Attribute();
         $origin_attr->set_id(wc_attribute_taxonomy_id_by_name('pa_opprinnelse'));
         $origin_attr->set_name('pa_opprinnelse');

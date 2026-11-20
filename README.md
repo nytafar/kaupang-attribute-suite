@@ -24,6 +24,7 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 - **Mix and Match Support**: Extends description fallback to WooCommerce Mix and Match products
 - **Inline Variation Description**: Render descriptions directly in the variations table, eliminating CLS and DOM manipulation issues
 - **Attribute Term Archives follow WooCommerce**: an attribute's term archives (e.g. `/opprinnelse/<slug>/`) exist only when "Enable archives" is ticked on it (Products → Attributes); with it off there are no rewrite rules and no links to them. Rewrite rules are rebuilt on the next request after activation, deactivation or an attribute change; after a version bump, on the request after the next wp-admin page load. Check: `tools/check-attribute-archives.php`
+- **Origin status, one URL, term-driven index** (`pa_opprinnelse`): every origin is `active` (≥ 1 active product), `former` (none, sold before) or `unsold`, derived by `kaupang_attribute_suite_origin_status()` from the products and one cached aggregate of order lines (renamed slugs fold in through term meta `previous_slugs`); the origin struct carries it as `status`. The term archive 301s to the origin's published page, or to `/opprinnelser/` for a former origin without one. `/opprinnelser/` lists active origins as cards («I sortimentet», with or without a page) and former ones with the period they sold («Tidligere»). An origin page shows a product strip (active) or a status line (former) between its header and its blocks. Cached pages purge when an origin's products change. Design: kaupang-docs `kaupang-attribute-suite/origins-architecture-2026-11-20.md`. Check: `tools/check.php`
 - **Term List Enhancements**: Description and Rich Content columns in attribute term list tables
 - **Quick Edit Description**: Edit term descriptions directly from the term list using Quick Edit
 
@@ -35,7 +36,7 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 | Content Storage | post_content + native post_meta |
 | Performance | Object cache integration for all lookups |
 | Editing UI | Block editor + meta box or custom fields |
-| URL structure | Rich pages at `/opprinnelser/<slug>/`; WooCommerce term archives only where "Enable archives" is on |
+| URL structure | Rich pages at `/opprinnelser/<slug>/`, the canonical URL of an origin with a published page (its term archive 301s there); WooCommerce term archives only where "Enable archives" is on, and for `pa_opprinnelse` only as the view of an active or unsold origin without a page |
 | Extendability | Developers can register new meta fields or templates via hooks |
 
 ## Installation
@@ -194,6 +195,18 @@ from the current post); a country set by hand in Rank Math wins. Check (staging,
 | `kaupang/attribute-suite/enable_archived_variations` | Treat disabled (private) variations as archived: hide their options on the storefront and from the admin Variations list, with a "Vis arkiverte (N)" toggle (default: true). Check: `tools/check-archived-variations.php` |
 | `kaupang/attribute-suite/enable_origin_schema` | Add `countryOfOrigin` to the Product JSON-LD node (Woo and Rank Math), only when every offered origin resolves to a country (default: false, must be enabled by theme). Check: `tools/check-origin-schema.php` |
 
+### Origin hooks
+
+| Hook | Description |
+|------|-------------|
+| `kaupang/attribute-suite/origin_single_before_content` (action, `$origin`) | Between the origin page's metadata header and its blocks. The suite renders the product strip / former status line here (`kaupang_attribute_suite_render_origin_products`, template `parts/origin-products.php`); remove or move it from the theme |
+| `kaupang/attribute-suite/origin_single_after_content` (action, `$origin`) | After the blocks; kaupang-trace lists the origin's batches here |
+| `kaupang/attribute-suite/origin_struct` (filter) | The origin struct, now with `status` (`state`, `active_products`, `first_sold`, `last_sold`) |
+| `kaupang/attribute-suite/origin_index` (filter) | The `/opprinnelser/` index entries (`active`, `former`) before they render |
+| `kaupang/attribute-suite/origin_index_title` (filter) | The index's public title (default «Opprinnelser») |
+| `kaupang/attribute-suite/origin_sale_statuses` (filter) | Order statuses that count as a sale for the sold period (default: Woo's paid statuses) |
+| `kaupang/attribute-suite/purge_origin_urls` (action, `$urls`, `$slugs`) | Origin URLs to purge after a change, for a page cache other than Nginx Helper |
+
 ## Load map
 
 `includes/core.php` loads on every request: CPT, taxonomy, meta and block-pattern registration, rewrite rules, cache
@@ -204,11 +217,11 @@ context shows up (decided at `wp` on the storefront, so before `wp_enqueue_scrip
 |---|---|---|---|
 | Guest page that renders nothing of ours (front page, shop, category, cart, account, pages) | none (+ the nb_NO catalogue: CPT/taxonomy labels are translated on `init`) | none | none |
 | Simple product, checkout, order received | + `templates/variation-no-description.php` when a third party enqueues `wc-add-to-cart-variation` (Woo prints its variation JS template; core swaps it, as before) | none | none |
-| Variable product | `variations` (template-loader, frontend-hooks, origin-render, variation-improvements, inline-variation-description, archived-variations) + `gallery` | `wc-ras-inline-description`, `wc-ras-variation-gallery-transition` (JS + CSS); JS deferred | none |
+| Variable product | `variations` (template-loader, frontend-hooks, origin-render, origin-status, variation-improvements, inline-variation-description, archived-variations) + `gallery` | `wc-ras-inline-description`, `wc-ras-variation-gallery-transition` (JS + CSS); JS deferred | none |
 | Variable product with `pa_opprinnelse` and attribute pages | + `sheet` (origin-frontend) and the modal/description templates | + `wc-ras-origin-modal`: stylesheet + 2 KB deferred opener. `origin-modal.js` (ES module) and `origin-radar.js` are imported on the first click of an origin CTA (warmed on hover/focus) | none |
-| Attribute term archive (`/opprinnelse/<slug>/`, where "Enable archives" is on) | `archived` (its `posts_where` filters the main query) | none | none |
-| Origin pages (`/opprinnelser/`, single, `origin_country`/`certification` archives) | `sheet` (+ `archived` for the product counts) | `wc-ras-origin` | none |
-| `/01/<GTIN>…` (GS1 link, kaupang-trace batch page) | `gtin` + `sheet` (kaupang-trace calls the render API at `template_redirect` 0) | `wc-ras-origin-modal` stylesheet when trace renders the inline card | none |
+| Attribute term archive (`/opprinnelse/<slug>/`, where "Enable archives" is on) | `archived` (its `posts_where` filters the main query); `status` (origin-render, origin-status) at `template_redirect` for `pa_opprinnelse`, which 301s to the origin's page or the index | none | none |
+| Origin pages (`/opprinnelser/`, single, `origin_country`/`certification` archives) | `sheet` (+ `archived` for the product counts and the strip) | `wc-ras-origin` | none |
+| `/01/<GTIN>…` (GS1 link, kaupang-trace batch page) | `gtin` + `sheet` (kaupang-trace calls the render API at `template_redirect` 0) + `archived` (the struct's status counts products) | `wc-ras-origin-modal` stylesheet when trace renders the inline card | none |
 | Variation data elsewhere (`wc-ajax=get_variation`, quick views, Mix and Match children, REST, CLI) | `variations`, loaded on the first `woocommerce_available_variation` / `woocommerce_ajax_variation_threshold` / `wc_mnm_child_item_details`; `archived` on variation option lists and variable products' attributes table | none | none |
 | wp-admin screens | `admin` (admin-hooks, origin-admin, origin-admin-certifications, archived-variations). Assets on their own screens only: cert picker on `certification` term screens, description nonce + quick-edit script on the `pa_*` term list, archived-variations script on the product edit screen | as listed | none |
 | admin-ajax | `admin` at `admin_init`, logged-in users only (all its handlers are `wp_ajax_*`) | — | none |

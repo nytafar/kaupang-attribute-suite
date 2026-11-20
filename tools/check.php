@@ -179,6 +179,140 @@ kas_check('variation JS template swap only for the variation template', kaupang_
     && (!apply_filters('kaupang/attribute-suite/enable_inline_variation_description', false)
         || kaupang_attribute_suite_variation_template('x', 'single-product/add-to-cart/variation.php') === KAUPANG_ATTRIBUTE_SUITE_DIR . 'templates/variation-no-description.php'));
 
+// ── Origins: status, canonical URL, index, strip, purge (kaupang-docs origins-architecture-2026-11-20.md §9) ──
+if (taxonomy_exists('pa_opprinnelse')) {
+    kaupang_attribute_suite_flush_origin_sales();
+    $kas_sales  = kaupang_attribute_suite_origin_sales();
+    $kas_terms  = get_terms(array('taxonomy' => 'pa_opprinnelse', 'hide_empty' => false));
+    $kas_by     = array('active' => array(), 'former' => array(), 'unsold' => array());
+    $kas_wrong  = array();
+    foreach ($kas_terms as $kas_term) {
+        $kas_status = kaupang_attribute_suite_origin_status($kas_term->slug);
+        $kas_want   = kaupang_attribute_suite_origin_product_count($kas_term->slug) > 0 ? 'active' : (isset($kas_sales[$kas_term->slug]) ? 'former' : 'unsold');
+        if ($kas_status['state'] !== $kas_want) {
+            $kas_wrong[] = "{$kas_term->slug}={$kas_status['state']}";
+        }
+        $kas_by[$kas_status['state']][] = $kas_term;
+    }
+    kas_check('origin status follows the rule for every term (active = products, former = sold before)', $kas_wrong === array(), implode(', ', $kas_wrong));
+    $kas_unsold = kaupang_attribute_suite_origin_status('kaupang-check-none');
+    kas_check('unsold: an origin with no products and no sales', 'unsold' === $kas_unsold['state'] && null === $kas_unsold['last_sold']);
+    if ($kas_by['former']) {
+        $kas_f = kaupang_attribute_suite_origin_status($kas_by['former'][0]->slug);
+        kas_check('former: ' . $kas_by['former'][0]->slug . ' has a sold period (' . kaupang_attribute_suite_format_sold_period($kas_f) . ')',
+            $kas_f['first_sold'] && $kas_f['last_sold'] >= $kas_f['first_sold'] && kaupang_attribute_suite_format_sold_period($kas_f) !== '');
+    } else {
+        echo "  skip former origin: none on this site\n";
+    }
+    foreach (kaupang_attribute_suite_origin_previous_slug_map() as $kas_old => $kas_new) {
+        kas_check("previous slug {$kas_old} folds into {$kas_new}", !isset($kas_sales[$kas_old]));
+    }
+    $kas_page_of = static function ($term) {
+        $page = kaupang_attribute_suite_get_cached_attribute_page($term->slug);
+        return $page && 'publish' === $page->post_status ? $page : null;
+    };
+
+    // Term archive: 301 to a published page; former without one → index; otherwise stays.
+    $kas_cases = array('page' => null, 'former-nopage' => null, 'active-nopage' => null);
+    foreach ($kas_terms as $kas_term) {
+        $kas_state = kaupang_attribute_suite_origin_status($kas_term->slug)['state'];
+        $kas_key   = $kas_page_of($kas_term) ? 'page' : $kas_state . '-nopage';
+        if (array_key_exists($kas_key, $kas_cases) && null === $kas_cases[$kas_key]) {
+            $kas_cases[$kas_key] = $kas_term;
+        }
+    }
+    $kas_want = array(
+        'page'          => static function ($t) use ($kas_page_of) { return get_permalink($kas_page_of($t)); },
+        'former-nopage' => static function () { return get_post_type_archive_link('attribute_page'); },
+        'active-nopage' => static function () { return ''; },
+    );
+    foreach ($kas_cases as $kas_key => $kas_term) {
+        if (!$kas_term) {
+            echo "  skip term archive redirect ({$kas_key}): no such origin here\n";
+            continue;
+        }
+        $kas_url = kaupang_attribute_suite_origin_term_redirect_url($kas_term);
+        kas_check("term archive {$kas_term->slug} ({$kas_key}) → " . ($kas_url === '' ? 'stays (200)' : $kas_url), $kas_url === (string) $kas_want[$kas_key]($kas_term));
+    }
+    kas_check('term archive redirect on template_redirect', has_action('template_redirect', 'kaupang_attribute_suite_origin_term_redirect') !== false);
+
+    // Index: active as cards, former newest first, unsold never.
+    $kas_index  = kaupang_attribute_suite_origin_index();
+    $kas_slugs  = static function ($entries) { return array_map(static function ($e) { return $e['term']->slug; }, $entries); };
+    $kas_bySlug = static function ($terms) { return array_map(static function ($t) { return $t->slug; }, $terms); };
+    kas_check('index «I sortimentet» = the active origins (' . count($kas_index['active']) . ')', $kas_slugs($kas_index['active']) === $kas_bySlug($kas_by['active']));
+    $kas_fs = $kas_slugs($kas_index['former']);
+    sort($kas_fs);
+    $kas_fw = $kas_bySlug($kas_by['former']);
+    sort($kas_fw);
+    $kas_last = array_map(static function ($e) { return $e['status']['last_sold']; }, $kas_index['former']);
+    $kas_sorted = $kas_last;
+    rsort($kas_sorted);
+    kas_check('index «Tidligere» = the former origins, newest last sale first (' . count($kas_index['former']) . ')', $kas_fs === $kas_fw && $kas_last === $kas_sorted);
+    kas_check('index never lists an unsold origin', !array_intersect($kas_bySlug($kas_by['unsold']), array_merge($kas_slugs($kas_index['active']), $kas_fs)));
+    kas_check('index title is «Opprinnelser» (filterable)', apply_filters('post_type_archive_title', 'x', 'attribute_page') === __('Opprinnelser', 'kaupang-attribute-suite'));
+
+    // Strip: exactly the counted products, each linking with the origin preselected on variable products.
+    if ($kas_by['active']) {
+        $kas_slug  = $kas_by['active'][0]->slug;
+        $kas_items = kaupang_attribute_suite_origin_strip_items($kas_slug);
+        $kas_links = array_filter($kas_items, static function ($i) use ($kas_slug) {
+            return !$i['product'] instanceof WC_Product_Variable || strpos($i['url'], 'attribute_pa_opprinnelse=' . $kas_slug) !== false;
+        });
+        kas_check("strip for {$kas_slug} lists exactly origin_product_count() products (" . count($kas_items) . ')',
+            count($kas_items) === kaupang_attribute_suite_origin_product_count($kas_slug) && count($kas_links) === count($kas_items));
+        $kas_hidden = array_filter($kas_items, static function ($i) { return 'hidden' === $i['product']->get_catalog_visibility() || 'search' === $i['product']->get_catalog_visibility(); });
+        kas_check('strip and count leave catalog-hidden products out', $kas_hidden === array());
+        ob_start();
+        kaupang_attribute_suite_render_origin_products(array('slug' => $kas_slug, 'status' => kaupang_attribute_suite_origin_status($kas_slug)));
+        $kas_html = ob_get_clean();
+        kas_check('active origin page renders the product strip', substr_count($kas_html, '<li>') === count($kas_items) && strpos($kas_html, 'wc-ras-origin-products') !== false);
+    }
+    if ($kas_by['former']) {
+        ob_start();
+        kaupang_attribute_suite_render_origin_products(array('slug' => $kas_by['former'][0]->slug, 'status' => kaupang_attribute_suite_origin_status($kas_by['former'][0]->slug)));
+        $kas_html = ob_get_clean();
+        kas_check('former origin page renders the status line, no strip', strpos($kas_html, 'wc-ras-origin-status former') !== false && strpos($kas_html, '<li>') === false);
+    }
+    ob_start();
+    kaupang_attribute_suite_render_origin_products(array('slug' => 'kaupang-check-none', 'status' => $kas_unsold));
+    kas_check('unsold origin page renders nothing there', trim(ob_get_clean()) === '');
+    kas_check('strip on origin_single_before_content', has_action('kaupang/attribute-suite/origin_single_before_content', 'kaupang_attribute_suite_render_origin_products') !== false);
+
+    // Page cache: a count flush queues the origin; its page, term archive and the index purge at shutdown.
+    if ($kas_cases['page']) {
+        kaupang_attribute_suite_flush_origin_counts(0, array($kas_cases['page']->slug));
+        $kas_urls = kaupang_attribute_suite_origin_purge_urls(array($kas_cases['page']->slug));
+        kas_check('count flush queues a purge at shutdown of page + index' . (is_taxonomy_viewable('pa_opprinnelse') ? ' + term archive' : ''),
+            has_action('shutdown', 'kaupang_attribute_suite_purge_origin_pages') !== false
+            && in_array(get_permalink($kas_page_of($kas_cases['page'])), $kas_urls, true)
+            && in_array(get_post_type_archive_link('attribute_page'), $kas_urls, true)
+            && (!is_taxonomy_viewable('pa_opprinnelse') || in_array(get_term_link($kas_cases['page']), $kas_urls, true)));
+        $GLOBALS['kaupang_attribute_suite_purge_queue'] = array(); // the check purges nothing
+    }
+
+    // Previous slugs: a rename records the old slug, renaming back takes it off. Writes a term: not on production.
+    if ('production' === wp_get_environment_type()) {
+        echo "  skip rename fixture: environment is production (it writes a term)\n";
+    } else {
+        $kas_fixture = wp_insert_term('kaupang check origin', 'pa_opprinnelse', array('slug' => 'kaupang-check-origin-a'));
+        if (is_wp_error($kas_fixture)) {
+            kas_check('rename fixture term created', false, $kas_fixture->get_error_message());
+        } else {
+            $kas_id = (int) $kas_fixture['term_id'];
+            wp_update_term($kas_id, 'pa_opprinnelse', array('slug' => 'kaupang-check-origin-b'));
+            $kas_after = get_term_meta($kas_id, 'previous_slugs', false);
+            wp_update_term($kas_id, 'pa_opprinnelse', array('slug' => 'kaupang-check-origin-a'));
+            $kas_back = get_term_meta($kas_id, 'previous_slugs', false);
+            wp_delete_term($kas_id, 'pa_opprinnelse');
+            kas_check('rename records the old slug in previous_slugs', $kas_after === array('kaupang-check-origin-a'), wp_json_encode($kas_after));
+            kas_check('renaming back takes the slug off it again (keeps the other)', $kas_back === array('kaupang-check-origin-b'), wp_json_encode($kas_back));
+        }
+    }
+} else {
+    echo "  skip origins: pa_opprinnelse doesn't exist here\n";
+}
+
 // ── Admin: own screens only (Pattern E). CLI is not wp-admin: load the module by hand, call only this plugin's callbacks. ──
 kaupang_attribute_suite_load('admin');
 Kaupang_Attribute_Suite_Archived_Variations::instance()->register_admin_hooks();

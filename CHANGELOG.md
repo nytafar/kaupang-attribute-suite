@@ -8,11 +8,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Origins (kaupang-attribute-suite#7, design: kaupang-docs `kaupang-attribute-suite/origins-architecture-2026-11-20.md`):
+  - Status per origin, derived: `active` (≥ 1 active product), `former` (none, sold before) or `unsold`.
+    `kaupang_attribute_suite_origin_status($slug)` returns it with `first_sold`/`last_sold`, from one aggregate over
+    order line meta `pa_opprinnelse` (HPOS or posts, paid statuses), cached 24 h; it is on the origin struct as
+    `status`. A renamed `pa_opprinnelse` term records its old slug in term meta `previous_slugs`, which the aggregate
+    folds in (staging was backfilled by hand: `kokoakamili`, `peru-amazonas-laguna`).
+  - One canonical URL: the term archive `/opprinnelse/<slug>/` (paged and filtered too) 301s to the origin's
+    published page, or to `/opprinnelser/` for a former origin without one.
+  - `/opprinnelser/` is built from the terms: «I sortimentet» (every active origin as a card, a plain card when it has
+    no page) and «Tidligere» (former origins with the period sold, newest first). Unsold origins don't show. Its
+    title is «Opprinnelser».
+  - Origin page: new action `origin_single_before_content` between the header and the blocks, where the suite renders
+    a product strip (image, name, «fra» price, link preselecting the origin) or, for a former origin, «Ikke i
+    sortimentet nå · solgt <periode>».
+  - Page cache: a change that moves an origin's count, or publishing/unpublishing its page, purges its page, term
+    archive and `/opprinnelser/` at shutdown (Nginx Helper; action `purge_origin_urls` for others).
 - Origin modal on Mix and Match products (2026-11-20): a row whose child is a `pa_opprinnelse` variation with an
   attribute page opens the same origin modal from its "Lær mer" instead of leaving the page. The link carries
   `data-open-origin-modal` + `data-origin-slug`; the page's origins ship as `wcRasOriginModal.origins`; the strip,
   arrows and swipe step through them without a variations form (`openOrigin()` in `origin-modal.js`). Rows whose
   origin has no page keep the plain link. The modal loads on MnM product pages only when such a row exists.
+
+### Changed
+- Origin product counts leave catalog-hidden products out (Lasse 2026-11-20), and the count and the strip read one
+  cached ID list (`kaupang_attribute_suite_origin_product_ids()`, cache key `origin_active_product_ids_*`).
+
+### Fixed
+- `/opprinnelser/land/<country>/` routes to the `origin_country` archive instead of 301-ing to an origin page
+  (kaupang-attribute-suite#6): the taxonomies register before the CPT, so the CPT's attachment catch-all no longer
+  sorts ahead of them. Takes effect at the next rewrite flush (version bump, then a wp-admin page load).
+- The origin card's producer icon has a size (it filled the card).
 
 ### Changed
 - Editorial flow (2026-11-05, dc83dc9): the origin single renders inside `<main id="content" class="content">`,

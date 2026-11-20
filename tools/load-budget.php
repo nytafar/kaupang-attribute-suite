@@ -13,12 +13,13 @@ return [
         'product_simple'   => ['files' => $variation_template + $origin_schema],
         'checkout'         => ['files' => $variation_template],
         'order_received'   => ['files' => $variation_template],
-        // Variable product: module `variations` (6 files) + `gallery` + the variation template.
-        'product_variable' => ['files' => 11 + $origin_schema, 'handles' => ['wc-ras-variation-gallery-transition', 'wc-ras-inline-description']],
+        // Variable product: module `variations` (7 files, origin-status included) + `gallery` + the variation template.
+        'product_variable' => ['files' => 12 + $origin_schema, 'handles' => ['wc-ras-variation-gallery-transition', 'wc-ras-inline-description']],
         // myrvann-cacao, a variable product with pa_opprinnelse: + `sheet` (origin-frontend) and its two templates; the
         // modal stylesheet + deferred opener (`wc-ras-origin-modal`); modal and radar code are imported on first open.
-        'faq'              => ['files' => 14 + $origin_schema, 'handles' => ['wc-ras-variation-gallery-transition', 'wc-ras-inline-description', 'wc-ras-origin-modal']],
-        // kaupang-trace batch URL (/01/…): `gtin` + `sheet` + the origin card template; the card's stylesheet.
-        'trace'            => ['files' => 9, 'handles' => ['wc-ras-origin-modal']],
+        'faq'              => ['files' => 15 + $origin_schema, 'handles' => ['wc-ras-variation-gallery-transition', 'wc-ras-inline-description', 'wc-ras-origin-modal']],
+        // kaupang-trace batch URL (/01/…): `gtin` + `sheet` + the origin card template; the card's stylesheet. The origin
+        // struct's status counts the origin's products, which loads `archived` (its posts_where).
+        'trace'            => ['files' => 11, 'handles' => ['wc-ras-origin-modal']],
     ],
 ];
