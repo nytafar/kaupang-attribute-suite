@@ -78,6 +78,20 @@ kas_check('meta sanitizer runs (core, any context)', sanitize_meta('taste_profil
 kas_check('certification term meta registered', isset(get_registered_meta_keys('term', 'certification')['icon_svg_id']));
 $pattern = WP_Block_Patterns_Registry::get_instance()->get_registered('kaupang-attribute-suite/origin-starter');
 kas_check('starter pattern registered, content read from its file', $pattern && strpos((string) $pattern['content'], 'wp:columns') !== false);
+// #6: rules as a flush would write them now. The taxonomies register before the CPT, so its catch-all
+// (`opprinnelser/[^/]+/([^/]+)/?$`, an attachment) can't take /opprinnelser/land/<country>/.
+$kas_fresh_rules = $GLOBALS['wp_rewrite']->rewrite_rules();
+$kas_route = static function ($path) use ($kas_fresh_rules) {
+    foreach ($kas_fresh_rules as $match => $query) {
+        if (preg_match('#^' . $match . '#', $path)) {
+            return $query;
+        }
+    }
+    return '';
+};
+kas_check('/opprinnelser/land/<country>/ routes to origin_country, not the CPT (#6)', strpos($kas_route('opprinnelser/land/peru/'), 'index.php?origin_country=') === 0, $kas_route('opprinnelser/land/peru/'));
+kas_check('/opprinnelser/sertifiseringer/<term>/ routes to certification', strpos($kas_route('opprinnelser/sertifiseringer/organic/'), 'index.php?certification=') === 0, $kas_route('opprinnelser/sertifiseringer/organic/'));
+kas_check('/opprinnelser/<slug>/ still routes to the attribute page', strpos($kas_route('opprinnelser/peru-qori-inti/'), 'index.php?attribute_page=') === 0, $kas_route('opprinnelser/peru-qori-inti/'));
 do_action('rest_api_init');
 kas_check('REST: attribute_page route registered', isset(rest_get_server()->get_routes()['/wp/v2/attribute_page']));
 

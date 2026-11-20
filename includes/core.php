@@ -775,8 +775,11 @@ function kaupang_attribute_suite_sanitize_altitude($value) {
 /**
  * Register origin_country and certification taxonomies.
  *
- * Hooked on init at priority 11 — after the CPT is registered at priority 10
- * (cpt-attribute-page.php), and before attribute-term sync hooks at priority 20.
+ * Hooked on init at priority 9, before the CPT (priority 10): WP writes rewrite rules in registration order, and
+ * the CPT's catch-all `opprinnelser/[^/]+/([^/]+)/?$` (attachment) sorted ahead of `opprinnelser/land/<term>/`
+ * otherwise, so /opprinnelser/land/peru/ became a missing attachment that redirect_guess_404_permalink() sent to
+ * an origin page (#6). Registering for a post type that doesn't exist yet is fine; WP links it when the CPT
+ * registers.
  */
 function kaupang_attribute_suite_register_origin_taxonomies() {
     register_taxonomy('origin_country', array('attribute_page'), array(
@@ -857,7 +860,7 @@ function kaupang_attribute_suite_register_origin_taxonomies() {
         'sanitize_callback' => 'esc_url_raw',
     ));
 }
-add_action('init', 'kaupang_attribute_suite_register_origin_taxonomies', 11);
+add_action('init', 'kaupang_attribute_suite_register_origin_taxonomies', 9);
 
 /**
  * Invalidate the cached attribute_page on term changes so wc_ras_origin
