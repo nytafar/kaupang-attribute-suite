@@ -60,10 +60,49 @@
         }
     }
 
+    var listCtx = null;
+
     /**
-     * Wire up a single form + its dialog.
+     * Open the dialog on one origin of a fixed list: Mix and Match rows, where no variations form drives the card.
+     * The strip, arrows and swipe step through the list directly. Clicking the open origin's CTA again closes.
+     *
+     * @param {string} slug
+     * @param {Array<Object>} origins wc_ras_origin structs, in row order.
      */
-    function setupForm(form) {
+    export function openOrigin(slug, origins) {
+        if (!listCtx) {
+            listCtx = setupForm(null, origins);
+            if (!listCtx) {
+                return;
+            }
+        }
+        var origin = findOrigin(listCtx, slug);
+        if (!origin) {
+            return;
+        }
+        if (listCtx.dialog.open && listCtx.card.getAttribute('data-current-slug') === slug) {
+            listCtx.dialog.close();
+            return;
+        }
+        hydrateCard(listCtx, origin);
+        if (!listCtx.dialog.open) {
+            openDialog(listCtx);
+        }
+    }
+
+    function findOrigin(ctx, slug) {
+        for (var i = 0; i < ctx.origins.length; i++) {
+            if (ctx.origins[i].slug === slug) {
+                return ctx.origins[i];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Wire up a dialog for a variations form, or (form null) for a fixed origin list.
+     */
+    function setupForm(form, list) {
         var dialog = document.querySelector('[data-wc-ras-origin-modal]');
         if (!dialog) {
             return null;
@@ -88,7 +127,7 @@
             form: form,
             dialog: dialog,
             card: card,
-            origins: readOrigins(form),
+            origins: form ? readOrigins(form) : (Array.isArray(list) ? list : []),
             gallery: gallery,
             lastMode: null
         };
@@ -98,7 +137,7 @@
         // CTA clicks: the opener calls toggle().
 
         // WC variation events → hydrate
-        if (window.jQuery) {
+        if (form && window.jQuery) {
             window.jQuery(form).on('found_variation show_variation', function (_event, variation) {
                 var origin = variation && variation.wc_ras_origin;
                 if (origin) {
@@ -163,6 +202,16 @@
         dialog.addEventListener('close', function () {
             dialog.style.transform = '';
             if (ctx.lastMode !== 'mobile') {
+                return;
+            }
+            if (!form) {
+                // List mode: back to the row of the origin last shown.
+                var slug = card.getAttribute('data-current-slug') || '';
+                var cta = slug ? document.querySelector('[data-open-origin-modal][data-origin-slug="' + slug + '"]') : null;
+                var row = cta && (cta.closest('.mnm_item') || cta);
+                if (row && typeof row.scrollIntoView === 'function') {
+                    row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                }
                 return;
             }
             var ctrl = findOriginControl(form);
@@ -253,6 +302,9 @@
     }
 
     function currentOriginSlug(ctx) {
+        if (!ctx.form) {
+            return ctx.card.getAttribute('data-current-slug') || '';
+        }
         var ctrl = findOriginControl(ctx.form);
         if (ctrl.select && ctrl.select.value) {
             return ctrl.select.value;
@@ -272,6 +324,13 @@
      */
     function selectOrigin(ctx, slug) {
         if (!slug) {
+            return;
+        }
+        if (!ctx.form) {
+            var origin = findOrigin(ctx, slug);
+            if (origin) {
+                hydrateCard(ctx, origin);
+            }
             return;
         }
         var ctrl = findOriginControl(ctx.form);

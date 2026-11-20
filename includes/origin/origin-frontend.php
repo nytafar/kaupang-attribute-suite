@@ -71,6 +71,39 @@ function kaupang_attribute_suite_origin_product_has_attribute_pages($product) {
 }
 
 /**
+ * Origin structs of a Mix and Match container's children, in child order, one per origin.
+ *
+ * A child counts when it is a variation whose pa_opprinnelse term has an attribute page. Their rows' "Lær mer"
+ * carries data-origin-slug (variation-improvements.php) and opens the modal on that origin; the opener gets this
+ * list as window.wcRasOriginModal.origins, since there is no variations form to read it from.
+ *
+ * @param WC_Product $product Mix and Match product.
+ * @return array[] wc_ras_origin structs (may be empty).
+ */
+function kaupang_attribute_suite_origin_mnm_origins($product) {
+    static $memo = array();
+    $id = $product->get_id();
+    if (isset($memo[$id])) {
+        return $memo[$id];
+    }
+    $out = array();
+    if (method_exists($product, 'get_child_items')) {
+        foreach ($product->get_child_items() as $child_item) {
+            $child = is_object($child_item) && method_exists($child_item, 'get_product') ? $child_item->get_product() : null;
+            if (!$child || !$child->is_type('variation')) {
+                continue;
+            }
+            $page = kaupang_attribute_suite_get_attribute_page_for_variation($child->get_id());
+            $struct = $page ? kaupang_attribute_suite_build_origin_struct($page) : null;
+            if ($struct && !empty($struct['slug']) && !isset($out[$struct['slug']])) {
+                $out[$struct['slug']] = $struct;
+            }
+        }
+    }
+    return $memo[$id] = array_values($out);
+}
+
+/**
  * Product-page guard used by both modal enqueue and modal render.
  *
  * Returns the WC_Product when the current request is a product page for a
@@ -85,6 +118,9 @@ function kaupang_attribute_suite_origin_modal_product() {
     }
     global $product;
     $candidate = $product instanceof WC_Product ? $product : wc_get_product(get_the_ID());
+    if ($candidate && $candidate->is_type('mix-and-match')) {
+        return kaupang_attribute_suite_origin_mnm_origins($candidate) ? $candidate : null;
+    }
     if (!$candidate || !$candidate->is_type('variable')) {
         return null;
     }
@@ -114,6 +150,11 @@ function kaupang_attribute_suite_origin_modal_product() {
  * @return array|null wc_ras_origin struct or null.
  */
 function kaupang_attribute_suite_origin_modal_initial_origin($product) {
+    if ($product->is_type('mix-and-match')) {
+        $origins = kaupang_attribute_suite_origin_mnm_origins($product);
+        return $origins ? $origins[0] : null;
+    }
+
     $default_attrs = method_exists($product, 'get_default_attributes')
         ? $product->get_default_attributes()
         : array();
@@ -182,9 +223,11 @@ function kaupang_attribute_suite_render_origin_sheet(array $origin, array $args 
  * the modal code (origin-modal.js, an ES module) and the radar on first open, so pages pay for neither until then.
  */
 function kaupang_attribute_suite_origin_enqueue_modal_assets() {
-    if (!kaupang_attribute_suite_origin_modal_product()) {
+    $product = kaupang_attribute_suite_origin_modal_product();
+    if (!$product) {
         return;
     }
+    $is_mnm = $product->is_type('mix-and-match');
 
     kaupang_attribute_suite_enqueue_origin_sheet_assets();
 
@@ -200,17 +243,17 @@ function kaupang_attribute_suite_origin_enqueue_modal_assets() {
     wp_enqueue_script(
         'wc-ras-origin-modal',
         $opener,
-        array('jquery', 'wc-add-to-cart-variation'),
+        $is_mnm ? array('jquery') : array('jquery', 'wc-add-to-cart-variation'),
         $opener_ver,
         array('in_footer' => true, 'strategy' => 'defer')
     );
     wp_add_inline_script('wc-ras-origin-modal', sprintf(
         'window.wcRasTasteAxes=%s;window.wcRasOriginModal=%s;',
         wp_json_encode(kaupang_attribute_suite_taste_axes()),
-        wp_json_encode(array(
+        wp_json_encode(array_merge(array(
             'modal' => add_query_arg('ver', $modal_ver, $modal),
             'radar' => add_query_arg('ver', $radar_ver, $radar),
-        ))
+        ), $is_mnm ? array('origins' => kaupang_attribute_suite_origin_mnm_origins($product)) : array()))
     ), 'before');
 }
 add_action('wp_enqueue_scripts', 'kaupang_attribute_suite_origin_enqueue_modal_assets', 20);

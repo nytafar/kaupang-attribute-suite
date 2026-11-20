@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Origin modal on Mix and Match products (2026-11-20): a row whose child is a `pa_opprinnelse` variation with an
+  attribute page opens the same origin modal from its "Lær mer" instead of leaving the page. The link carries
+  `data-open-origin-modal` + `data-origin-slug`; the page's origins ship as `wcRasOriginModal.origins`; the strip,
+  arrows and swipe step through them without a variations form (`openOrigin()` in `origin-modal.js`). Rows whose
+  origin has no page keep the plain link. The modal loads on MnM product pages only when such a row exists.
+
 ### Changed
 - Editorial flow (2026-11-05, dc83dc9): the origin single renders inside `<main id="content" class="content">`,
   the same page parent as the theme's `page.php`. The theme's content-parent rules (width, block-gap rhythm)

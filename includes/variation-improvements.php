@@ -216,6 +216,12 @@ class Kaupang_Attribute_Suite_Variation_Improvements {
                         continue;
                     }
                     
+                    // An origin with a rich page opens the origin modal in place (origin-modal-opener.js).
+                    $cta_attrs = '';
+                    if ($taxonomy === 'pa_opprinnelse' && kaupang_attribute_suite_get_cached_attribute_page($term->slug)) {
+                        $cta_attrs = ' data-open-origin-modal="1" data-origin-slug="' . esc_attr($term->slug) . '"';
+                    }
+
                     // First check if term has a description
                     $term_description = trim($term->description);
                     
@@ -232,11 +238,11 @@ class Kaupang_Attribute_Suite_Variation_Improvements {
                             $link_url = !empty($page_id) ? get_permalink($page_id) : $custom_url;
                             $link_text = !empty($page_id) ? get_the_title($page_id) : __('Learn more', 'kaupang-attribute-suite');
                             
-                            $term_page_links[] = '<a href="' . esc_url($link_url) . '" class="term-page-link">' . esc_html($link_text) . '</a>';
+                            $term_page_links[] = '<a href="' . esc_url($link_url) . '" class="term-page-link"' . $cta_attrs . '>' . esc_html($link_text) . '</a>';
                         } else {
                             // Rich page, else term archive; '' keeps the index paired with its description.
                             $learn_more = kaupang_attribute_suite_get_learn_more_url($term);
-                            $term_page_links[] = $learn_more === '' ? '' : '<a href="' . esc_url($learn_more) . '" class="term-page-link">' .
+                            $term_page_links[] = $learn_more === '' ? '' : '<a href="' . esc_url($learn_more) . '" class="term-page-link"' . $cta_attrs . '>' .
                                                  esc_html__('Learn more', 'kaupang-attribute-suite') . '</a>';
                         }
                     } else {
@@ -251,7 +257,7 @@ class Kaupang_Attribute_Suite_Variation_Improvements {
                                 $term_descriptions[] = wp_trim_words($content, 30, '...');
 
                                 // Add link to attribute page (CPT permalink)
-                                $term_page_links[] = '<a href="' . esc_url(kaupang_attribute_suite_get_learn_more_url($term)) . '" class="term-page-link">' .
+                                $term_page_links[] = '<a href="' . esc_url(kaupang_attribute_suite_get_learn_more_url($term)) . '" class="term-page-link"' . $cta_attrs . '>' .
                                                      esc_html__('Learn more', 'kaupang-attribute-suite') . '</a>';
                             }
                         }

@@ -75,6 +75,9 @@ function kaupang_attribute_suite_route_front() {
         if (!empty($attributes['pa_opprinnelse'])) {
             kaupang_attribute_suite_load('sheet'); // origin modal
         }
+    } elseif (is_product() && wc_get_product(get_queried_object_id()) instanceof WC_Product && wc_get_product(get_queried_object_id())->is_type('mix-and-match')) {
+        // Mix and Match rows whose child is an origin variation open the same modal (origin-frontend.php decides).
+        kaupang_attribute_suite_load('sheet');
     } elseif (is_singular('attribute_page') || is_post_type_archive('attribute_page') || is_tax(array('origin_country', 'certification'))) {
         kaupang_attribute_suite_load('sheet');
     }
