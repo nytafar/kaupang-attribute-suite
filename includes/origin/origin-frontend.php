@@ -332,3 +332,97 @@ function kaupang_attribute_suite_origin_template_include($template) {
     return $template;
 }
 add_filter('template_include', 'kaupang_attribute_suite_origin_template_include', 20);
+
+/**
+ * The products of an origin as the strip shows them: per product the name, the image, the price of the variations
+ * with this origin ("fra" when they differ), and a link that preselects the origin on a variable product
+ * (`?attribute_pa_opprinnelse=<slug>`, fase 4). Same product set as kaupang_attribute_suite_origin_product_count().
+ *
+ * @param string $slug pa_opprinnelse term slug.
+ * @return array<int,array{product:WC_Product, url:string, price_html:string}>
+ */
+function kaupang_attribute_suite_origin_strip_items($slug) {
+    $items = array();
+    $ids   = kaupang_attribute_suite_origin_product_ids($slug);
+    if (!$ids) {
+        return $items;
+    }
+    _prime_post_caches($ids);
+    foreach ($ids as $id) {
+        $product = wc_get_product($id);
+        if (!$product) {
+            continue;
+        }
+        $url = (string) get_permalink($id);
+        if ($product instanceof WC_Product_Variable) {
+            $prices = array();
+            foreach ($product->get_children() as $child_id) {
+                $variation = wc_get_product($child_id);
+                if (!$variation || 'publish' !== $variation->get_status() || '' === (string) $variation->get_price()) {
+                    continue;
+                }
+                $attributes = $variation->get_variation_attributes(); // '' = "any"
+                $value      = isset($attributes['attribute_pa_opprinnelse']) ? (string) $attributes['attribute_pa_opprinnelse'] : '';
+                if ($value !== '' && $value !== $slug) {
+                    continue;
+                }
+                $prices[] = (float) wc_get_price_to_display($variation);
+            }
+            $prices = array_unique($prices);
+            sort($prices);
+            if (!$prices) {
+                $price_html = $product->get_price_html();
+            } elseif (count($prices) > 1) {
+                /* translators: %s: lowest price */
+                $price_html = sprintf(__('fra %s', 'kaupang-attribute-suite'), wc_price($prices[0]));
+            } else {
+                $price_html = wc_price($prices[0]);
+            }
+            $url = add_query_arg('attribute_pa_opprinnelse', $slug, $url);
+        } else {
+            $price_html = $product->get_price_html();
+        }
+        $items[] = array('product' => $product, 'url' => $url, 'price_html' => $price_html);
+    }
+    return $items;
+}
+
+/**
+ * Origin page, between the metadata header and the blocks: the product strip for an active origin, a status line
+ * for a former one, nothing for an unsold one. Themes move or remove it through the hook:
+ * remove_action('kaupang/attribute-suite/origin_single_before_content', 'kaupang_attribute_suite_render_origin_products').
+ *
+ * @param array $origin Origin struct (with `status`).
+ */
+function kaupang_attribute_suite_render_origin_products($origin) {
+    $status = isset($origin['status']) && is_array($origin['status']) ? $origin['status'] : null;
+    if (!$status || 'unsold' === $status['state']) {
+        return;
+    }
+    echo kaupang_attribute_suite_load_template('parts/origin-products', array( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in the part
+        'origin' => $origin,
+        'status' => $status,
+        'items'  => 'active' === $status['state'] ? kaupang_attribute_suite_origin_strip_items($origin['slug']) : array(),
+    ));
+}
+add_action('kaupang/attribute-suite/origin_single_before_content', 'kaupang_attribute_suite_render_origin_products');
+
+/**
+ * The index's public name is «Opprinnelser», not the CPT's admin label (heading and document title).
+ *
+ * @param string $title     Archive title.
+ * @param string $post_type Post type.
+ * @return string
+ */
+function kaupang_attribute_suite_origin_index_title($title, $post_type = '') {
+    if ('attribute_page' !== $post_type) {
+        return $title;
+    }
+    /**
+     * Filter the origin index's public title.
+     *
+     * @param string $title Default «Opprinnelser».
+     */
+    return (string) apply_filters('kaupang/attribute-suite/origin_index_title', __('Opprinnelser', 'kaupang-attribute-suite'));
+}
+add_filter('post_type_archive_title', 'kaupang_attribute_suite_origin_index_title', 10, 2);

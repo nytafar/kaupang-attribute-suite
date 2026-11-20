@@ -942,7 +942,7 @@ function kaupang_attribute_suite_flush_origin_counts($post_id, $slugs = null) {
         $slugs = wc_get_product_terms($parent ? $parent : $post_id, 'pa_opprinnelse', array('fields' => 'slugs'));
     }
     foreach ((array) $slugs as $slug) {
-        wp_cache_delete('origin_active_product_count_' . md5($slug), 'kaupang_attribute_suite_origin');
+        wp_cache_delete('origin_active_product_ids_' . md5($slug), 'kaupang_attribute_suite_origin');
     }
 }
 

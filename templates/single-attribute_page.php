@@ -20,8 +20,9 @@
  *       4. Flavour: radar-SVG + frihåndsnotater (smak)
  *       5. Hero-image: polaroid (mobil sist; desktop høyre kolonne)
  *     </div>
- *     6. the_content() — Gutenberg blocks (direct children of <article>)
- *     7. Related products (deferred — hook for theme/site integration)
+ *     6. origin_single_before_content — product strip (active) or status line (former)
+ *     7. the_content() — Gutenberg blocks (direct children of <article>)
+ *     8. origin_single_after_content — kaupang-trace's batch list
  *   </article>
  *
  * @package Kaupang\AttributeSuite
@@ -200,15 +201,18 @@ while (have_posts()) :
         </div>
 
         <?php
+        // ─── Products or status ───
+        // Active: the product strip; former: a status line; unsold: nothing (origin-frontend.php). Themes move or
+        // remove it through the hook.
+        do_action('kaupang/attribute-suite/origin_single_before_content', $origin);
+
         // ─── Gutenberg content ───
         // Direct children of <article> so block alignment (alignwide/alignfull)
         // and theme content styles apply without an extra wrapper.
         the_content();
 
-        // ─── Related products hook ───
-        // Intentionally no default rendering — hook leveraged by theme/site
-        // integration. Kept for fase 3/4 when we ship the related-products
-        // query that filters by pa_opprinnelse.
+        // ─── After the content ───
+        // No default rendering: kaupang-trace lists the origin's batches here.
         do_action('kaupang/attribute-suite/origin_single_after_content', $origin);
         ?>
     </article>

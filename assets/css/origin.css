@@ -25,9 +25,10 @@
 }
 
 /* Tidligere: kompakt liste — navn, land, periode. */
+/* margin-block only: the theme centres section > * with margin-inline. */
 .wc-ras-origin-archive .former .list {
     list-style: none;
-    margin: 0;
+    margin-block: 0;
     padding: 0;
 }
 
@@ -88,6 +89,18 @@
     flex-wrap: wrap;
     gap: 0.5rem;
     align-items: center;
+}
+
+.wc-ras-origin-card .producer {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.wc-ras-origin-card .producer svg {
+    flex: none;
+    width: 1.1em;
+    height: 1.1em;
 }
 
 /* Uten opprinnelsesside: navn + antall, ingen bilde. */
@@ -725,4 +738,70 @@ body.single-attribute_page {
     height: 0.95em;
     border: 1px solid hsla(0, 0%, 0%, 0.1);
     box-shadow: 0 1px 1px hsla(0, 0%, 0%, 0.1);
+}
+
+/* ── Produktstripe / status (mellom header og blokker) ──────── */
+
+.wc-ras-origin-products {
+    margin-block: 2rem;
+}
+
+.wc-ras-origin-products h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    color: var(--text-color-muted, hsl(30, 10%, 40%));
+}
+
+/* Én lav rad; ruller sidelengs når den ikke får plass. */
+.wc-ras-origin-products .strip {
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+    padding: 0 0 0.5rem;
+    list-style: none;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline mandatory;
+}
+
+.wc-ras-origin-products li {
+    flex: 0 0 9rem;
+    scroll-snap-align: start;
+}
+
+.wc-ras-origin-products a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    color: inherit;
+    text-decoration: none;
+}
+
+.wc-ras-origin-products img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: cover;
+}
+
+.wc-ras-origin-products .name {
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.wc-ras-origin-products a:hover .name,
+.wc-ras-origin-products a:focus-visible .name {
+    text-decoration: underline;
+}
+
+.wc-ras-origin-products .price {
+    margin: 0;
+    font-size: 0.9em;
+    color: var(--text-color-muted, hsl(30, 10%, 40%));
+}
+
+.wc-ras-origin-status.former {
+    margin-block: 2rem;
+    color: var(--text-color-muted, hsl(30, 10%, 40%));
 }

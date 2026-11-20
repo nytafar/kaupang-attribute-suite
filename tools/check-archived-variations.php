@@ -154,7 +154,7 @@ try {
 
     // The origin count helper agrees with what each origin archive lists (live data, read-only).
     foreach (get_terms(array('taxonomy' => 'pa_opprinnelse', 'hide_empty' => false)) as $origin) {
-        wp_cache_delete('origin_active_product_count_' . md5($origin->slug), 'kaupang_attribute_suite_origin');
+        wp_cache_delete('origin_active_product_ids_' . md5($origin->slug), 'kaupang_attribute_suite_origin');
         $listed  = count($archive('pa_opprinnelse', $origin->slug, array('publish')));
         $counted = kaupang_attribute_suite_origin_product_count($origin->slug);
         $check($listed === $counted, "origin {$origin->slug}: count {$counted} = archive {$listed}");

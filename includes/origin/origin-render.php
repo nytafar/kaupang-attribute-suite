@@ -83,28 +83,30 @@ function kaupang_attribute_suite_format_altitude($altitude) {
 }
 
 /**
- * Count published products active for a given opprinnelse term slug — the same set its term archive lists
- * (a variable product needs a published variation with the term; see archived-variations.php).
+ * Published products active for a given opprinnelse term slug — the same set its term archive lists (a variable
+ * product needs a published variation with the term, see archived-variations.php; catalog-hidden products don't
+ * count), in the shop's menu order.
+ * The origin page's product strip and the count read this one list, so they can't disagree.
  * Cached for 1 hour per slug; cleared by kaupang_attribute_suite_flush_origin_counts() on product/variation changes.
  *
  * @param string $slug pa_opprinnelse term slug.
- * @return int
+ * @return int[]
  */
-function kaupang_attribute_suite_origin_product_count($slug) {
+function kaupang_attribute_suite_origin_product_ids($slug) {
     if (empty($slug)) {
-        return 0;
+        return array();
     }
 
-    $cache_key = 'origin_active_product_count_' . md5($slug); // key bumped when archived variations stopped counting
+    $cache_key = 'origin_active_product_ids_' . md5($slug); // flushed by kaupang_attribute_suite_flush_origin_counts()
     $cached = wp_cache_get($cache_key, 'kaupang_attribute_suite_origin');
-    if ($cached !== false) {
-        return (int) $cached;
+    if (is_array($cached)) {
+        return $cached;
     }
 
     $term = get_term_by('slug', $slug, 'pa_opprinnelse');
     if (!$term || is_wp_error($term)) {
-        wp_cache_set($cache_key, 0, 'kaupang_attribute_suite_origin', HOUR_IN_SECONDS);
-        return 0;
+        wp_cache_set($cache_key, array(), 'kaupang_attribute_suite_origin', HOUR_IN_SECONDS);
+        return array();
     }
 
     $query = new WP_Query(array(
@@ -114,17 +116,37 @@ function kaupang_attribute_suite_origin_product_count($slug) {
         'posts_per_page' => -1,
         'fields'         => 'ids',
         'no_found_rows'  => true,
+        'orderby'        => array('menu_order' => 'ASC', 'title' => 'ASC'),
         'kaupang_attribute_suite_active_term' => array('pa_opprinnelse', $slug),
-        'tax_query'      => array(array(
-            'taxonomy' => 'pa_opprinnelse',
-            'field'    => 'slug',
-            'terms'    => $slug,
-        )),
+        'tax_query'      => array(
+            array(
+                'taxonomy' => 'pa_opprinnelse',
+                'field'    => 'slug',
+                'terms'    => $slug,
+            ),
+            // Catalog-hidden products aren't in the assortment for a visitor (Woo's archives leave them out too).
+            array(
+                'taxonomy' => 'product_visibility',
+                'field'    => 'term_taxonomy_id',
+                'terms'    => array((int) wc_get_product_visibility_term_ids()['exclude-from-catalog']),
+                'operator' => 'NOT IN',
+            ),
+        ),
     ));
 
-    $count = count($query->posts);
-    wp_cache_set($cache_key, $count, 'kaupang_attribute_suite_origin', HOUR_IN_SECONDS);
-    return $count;
+    $ids = array_map('intval', $query->posts);
+    wp_cache_set($cache_key, $ids, 'kaupang_attribute_suite_origin', HOUR_IN_SECONDS);
+    return $ids;
+}
+
+/**
+ * Number of products active for an origin (kaupang_attribute_suite_origin_product_ids()).
+ *
+ * @param string $slug pa_opprinnelse term slug.
+ * @return int
+ */
+function kaupang_attribute_suite_origin_product_count($slug) {
+    return count(kaupang_attribute_suite_origin_product_ids($slug));
 }
 
 // Count cache invalidation (kaupang_attribute_suite_flush_origin_counts) lives in core.php: any context can change a count.
