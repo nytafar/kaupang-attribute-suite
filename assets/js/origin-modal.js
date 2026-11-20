@@ -271,11 +271,19 @@
         if (!Array.isArray(variations)) {
             return [];
         }
+        // Only origins the form can select. A variation can carry an origin
+        // the parent product doesn't list among its attribute terms; Woo then
+        // leaves it out of the select, and committing it there blanks the
+        // selection (reset_data → empty card under the old title).
+        var selectable = selectableOrigins(form);
         var seen = {};
         var out = [];
         for (var i = 0; i < variations.length; i++) {
             var v = variations[i];
             var origin = v && v.wc_ras_origin;
+            if (selectable && origin && origin.slug && !selectable[origin.slug]) {
+                continue;
+            }
             if (origin && origin.slug && !seen[origin.slug]) {
                 seen[origin.slug] = true;
                 out.push(origin);
@@ -299,6 +307,35 @@
             form.querySelectorAll('input[type="radio"][name="attribute_pa_opprinnelse"]')
         );
         return { select: select, radios: radios };
+    }
+
+    /**
+     * The origin values the form offers, as a set, or null when the form has
+     * no origin control (nothing to filter against).
+     *
+     * @return {Object<string, true>|null}
+     */
+    function selectableOrigins(form) {
+        var ctrl = findOriginControl(form);
+        var values = [];
+        if (ctrl.select) {
+            for (var i = 0; i < ctrl.select.options.length; i++) {
+                values.push(ctrl.select.options[i].value);
+            }
+        }
+        ctrl.radios.forEach(function (radio) {
+            values.push(radio.value);
+        });
+        if (!values.length) {
+            return null;
+        }
+        var set = {};
+        values.forEach(function (value) {
+            if (value) {
+                set[value] = true;
+            }
+        });
+        return set;
     }
 
     function currentOriginSlug(ctx) {
@@ -356,8 +393,12 @@
             return;
         }
 
-        // Select: canonical WC path.
-        if (ctrl.select && ctrl.select.value !== slug) {
+        // Select: canonical WC path. Setting a value the select has no option
+        // for blanks it, so only commit one it offers.
+        var offered = ctrl.select && Array.prototype.some.call(ctrl.select.options, function (option) {
+            return option.value === slug;
+        });
+        if (offered && ctrl.select.value !== slug) {
             ctrl.select.value = slug;
             if (window.jQuery) {
                 window.jQuery(ctrl.select).trigger('change');

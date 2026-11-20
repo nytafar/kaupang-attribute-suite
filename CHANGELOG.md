@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (kaupang-attribute-suite#6): the taxonomies register before the CPT, so the CPT's attachment catch-all no longer
   sorts ahead of them. Takes effect at the next rewrite flush (version bump, then a wp-admin page load).
 - The origin card's producer icon has a size (it filled the card).
+- The origin modal's strip offers only origins the variations form can select. A variation whose origin the parent
+  product doesn't list among its `pa_opprinnelse` terms (Myrvann Cacao's Belize, 2026-11-20) put a tile in the strip
+  that Woo's select has no option for; clicking it blanked the selection and left an empty card under the previous
+  origin's title. The select path also refuses a value it doesn't offer.
 
 ### Changed
 - Editorial flow (2026-11-05, dc83dc9): the origin single renders inside `<main id="content" class="content">`,
