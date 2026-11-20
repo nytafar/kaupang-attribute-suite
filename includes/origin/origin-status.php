@@ -193,3 +193,46 @@ function kaupang_attribute_suite_origin_term_redirect_url($term) {
     }
     return '';
 }
+
+/**
+ * The origins the index /opprinnelser/ lists, built from the terms and joined to their pages (§5).
+ *
+ *   active  every active origin, in the attribute's term order
+ *   former  every former origin, newest last_sold first
+ *
+ * Unsold origins are left out. Each entry: `term` (WP_Term), `status`, `page` (published WP_Post or null) and
+ * `origin` (the origin struct when there is a page, else null).
+ *
+ * @return array{active:array<int,array>, former:array<int,array>}
+ */
+function kaupang_attribute_suite_origin_index() {
+    $index = array('active' => array(), 'former' => array());
+    $terms = get_terms(array('taxonomy' => 'pa_opprinnelse', 'hide_empty' => false));
+    if (is_wp_error($terms)) {
+        return $index;
+    }
+    foreach ($terms as $term) {
+        $status = kaupang_attribute_suite_origin_status($term->slug);
+        if ('unsold' === $status['state']) {
+            continue;
+        }
+        $page = kaupang_attribute_suite_get_cached_attribute_page($term->slug);
+        $page = $page && 'publish' === $page->post_status ? $page : null;
+        $index[$status['state']][] = array(
+            'term'   => $term,
+            'status' => $status,
+            'page'   => $page,
+            'origin' => $page ? kaupang_attribute_suite_build_origin_struct($page) : null,
+        );
+    }
+    usort($index['former'], static function ($a, $b) {
+        return strcmp((string) $b['status']['last_sold'], (string) $a['status']['last_sold']);
+    });
+
+    /**
+     * Filter the origin index before the archive renders it.
+     *
+     * @param array $index { active: entry[], former: entry[] }
+     */
+    return apply_filters('kaupang/attribute-suite/origin_index', $index);
+}

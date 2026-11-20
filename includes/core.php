@@ -110,6 +110,28 @@ function kaupang_attribute_suite_origin_term_redirect() {
 add_action('template_redirect', 'kaupang_attribute_suite_origin_term_redirect', 1);
 
 /**
+ * The index /opprinnelser/ is built from the terms (templates/archive-attribute_page.php), not the CPT's main query:
+ * keep that query to one row, and send /opprinnelser/page/N/ to the index.
+ *
+ * @param WP_Query $query Query.
+ */
+function kaupang_attribute_suite_origin_index_query($query) {
+    if (!is_admin() && $query->is_main_query() && $query->is_post_type_archive('attribute_page') && !$query->is_feed()) {
+        $query->set('posts_per_page', 1);
+        $query->set('no_found_rows', true);
+    }
+}
+add_action('pre_get_posts', 'kaupang_attribute_suite_origin_index_query');
+
+function kaupang_attribute_suite_origin_index_redirect() {
+    if (is_post_type_archive('attribute_page') && is_paged() && !is_feed()
+        && wp_safe_redirect(get_post_type_archive_link('attribute_page'), 301, 'Kaupang Attribute Suite')) {
+        exit;
+    }
+}
+add_action('template_redirect', 'kaupang_attribute_suite_origin_index_redirect', 1);
+
+/**
  * Variation data can be built anywhere (wc-ajax get_variation, quick views, Mix and Match children, REST, CLI):
  * load the module first thing on the hook. Its callbacks register at later priorities, which WP_Hook runs in the
  * same pass.

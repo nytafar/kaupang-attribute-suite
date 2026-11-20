@@ -20,6 +20,41 @@
     opacity: 0.7;
 }
 
+.wc-ras-origin-archive section + section {
+    margin-top: 3rem;
+}
+
+/* Tidligere: kompakt liste — navn, land, periode. */
+.wc-ras-origin-archive .former .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.wc-ras-origin-archive .former li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.75rem;
+    padding-block: 0.5rem;
+    border-bottom: 1px solid var(--rule-color, hsl(30, 20%, 80%));
+}
+
+.wc-ras-origin-archive .former .name {
+    font-weight: 600;
+}
+
+.wc-ras-origin-archive .former .country,
+.wc-ras-origin-archive .former .period {
+    color: var(--text-color-muted, hsl(30, 10%, 40%));
+    font-size: 0.9em;
+}
+
+.wc-ras-origin-archive .former .period {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+}
+
 /* ── Kort ────────────────────────────────────────────────────── */
 
 .wc-ras-origin-card {
@@ -53,6 +88,14 @@
     flex-wrap: wrap;
     gap: 0.5rem;
     align-items: center;
+}
+
+/* Uten opprinnelsesside: navn + antall, ingen bilde. */
+.wc-ras-origin-card.plain {
+    justify-content: flex-end;
+    min-height: 8rem;
+    padding: 1rem;
+    border: 1px solid var(--rule-color, hsl(30, 20%, 80%));
 }
 
 .wc-ras-origin-card .link {
