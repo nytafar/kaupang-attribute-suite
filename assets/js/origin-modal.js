@@ -142,6 +142,9 @@
                 var origin = variation && variation.wc_ras_origin;
                 if (origin) {
                     hydrateCard(ctx, origin);
+                    if (dialog.open) {
+                        sizeToImage(ctx); // another origin, another height
+                    }
                 } else if (dialog.open) {
                     // Selected origin has no rich page: nothing to mirror, so
                     // close rather than keep showing the previous origin.
@@ -367,6 +370,9 @@
             var origin = findOrigin(ctx, slug);
             if (origin) {
                 hydrateCard(ctx, origin);
+                if (ctx.dialog.open) {
+                    sizeToImage(ctx);
+                }
             }
             return;
         }
@@ -434,6 +440,10 @@
     function openDialog(ctx) {
         var mode = currentMode();
         ctx.lastMode = mode;
+        // show() focuses the close button, and the browser scrolls it into view at
+        // the sheet's old top before sizeToImage() places it: keep the page where it was.
+        var scrollX = window.scrollX;
+        var scrollY = window.scrollY;
         try {
             if (mode === 'desktop') {
                 ctx.dialog.show();
@@ -444,6 +454,9 @@
             // Fallback: if showModal() throws (already open, etc.), force open attribute.
             ctx.dialog.setAttribute('open', '');
         }
+        if (mode === 'desktop') {
+            window.scrollTo(scrollX, scrollY);
+        }
         sizeToImage(ctx);
         updateStrip(ctx, currentOriginSlug(ctx));
     }
@@ -453,24 +466,59 @@
      * gallery, thumbnails included, which can run well past the viewport.
      * The sheet sizes to its content but never past the main image box
      * (FlexSlider's .flex-viewport, or the wrapper when there is no slider)
-     * or what is visible below the gallery's top edge. Modal mode is
-     * full-viewport by CSS; clear any inline cap there.
+     * or the viewport below the page's sticky header.
+     *
+     * Its top lines up with the origin row the visitor is looking at (the
+     * attribute row holding the origin control; the CTA for a fixed list),
+     * then is pulled up as far as needed to keep the whole sheet in view and
+     * inside the gallery, and never under the sticky header. The header's
+     * height is read from the page's `scroll-padding-top`, the standard
+     * place a theme declares it. Modal mode is full-viewport by CSS; clear
+     * the inline size and position there.
      */
     function sizeToImage(ctx) {
         var dialog = ctx.dialog;
-        if (ctx.lastMode !== 'desktop' || !ctx.gallery) {
+        var box = ctx.gallery && (ctx.gallery.querySelector('.flex-viewport') ||
+            ctx.gallery.querySelector('.woocommerce-product-gallery__wrapper'));
+        if (ctx.lastMode !== 'desktop' || !box) {
             dialog.style.maxHeight = '';
+            dialog.style.top = '';
             return;
         }
-        var box = ctx.gallery.querySelector('.flex-viewport') ||
-            ctx.gallery.querySelector('.woocommerce-product-gallery__wrapper');
-        if (!box) {
-            dialog.style.maxHeight = '';
-            return;
-        }
+        var margin = 8;
+        var clearance = (parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0) + margin;
         var rect = box.getBoundingClientRect();
-        var visible = window.innerHeight - Math.max(rect.top, 0) - 8;
-        dialog.style.maxHeight = Math.max(320, Math.min(rect.height, visible)) + 'px';
+        var room = window.innerHeight - clearance - margin;
+        dialog.style.maxHeight = Math.max(320, Math.min(rect.height, room)) + 'px';
+
+        var galleryRect = ctx.gallery.getBoundingClientRect();
+        var height = dialog.offsetHeight;
+        var anchor = originAnchor(ctx);
+        var top = anchor ? anchor.getBoundingClientRect().top : clearance;
+        top = Math.min(top, window.innerHeight - margin - height); // whole sheet in view
+        top = Math.max(top, clearance); // never under the sticky header
+        var offset = Math.min(top - galleryRect.top, galleryRect.height - height); // inside the gallery
+        dialog.style.top = Math.max(0, offset) + 'px';
+    }
+
+    /**
+     * The element the desktop sheet lines up with: the row of the form's
+     * origin control (a table row in WC's markup), else the CTA of the
+     * origin shown (Mix and Match rows), else the first CTA.
+     *
+     * @return {Element|null}
+     */
+    function originAnchor(ctx) {
+        if (ctx.form) {
+            var ctrl = findOriginControl(ctx.form);
+            var control = ctrl.select || ctrl.radios[0];
+            if (control) {
+                return control.closest('tr') || control;
+            }
+        }
+        var slug = ctx.card.getAttribute('data-current-slug') || '';
+        return (slug && document.querySelector('[data-open-origin-modal][data-origin-slug="' + slug + '"]')) ||
+            document.querySelector('[data-open-origin-modal]');
     }
 
     // ── Hydration ───────────────────────────────────────────────
