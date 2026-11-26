@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-11-26
+
 ### Changed
 - Origin modal, desktop: the sheet lines up with the origin row (the attribute row holding the origin control; the
   CTA for Mix and Match) instead of the gallery's top edge, pulled up only as far as it takes to stay whole in the

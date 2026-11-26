@@ -3,7 +3,7 @@ Contributors: lassejellum
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.4.0
+Stable tag: 2.4.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,15 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 4. Edit an attribute term to access its rich content page
 
 == Changelog ==
+
+= 2.4.1 – 2026-11-26 =
+
+**Changed**
+* Origin modal, desktop: the sheet lines up with the origin row (the attribute row holding the origin control; the
+  CTA for Mix and Match) instead of the gallery's top edge, pulled up only as far as it takes to stay whole in the
+  viewport and inside the gallery, and never under the sticky header (read from the page's `scroll-padding-top`). It
+  re-fits when another origin is shown. Opening it no longer scrolls the page up to the gallery: `show()` focusing the
+  close button did that.
 
 = 2.4.0 – 2026-11-26 =
 
