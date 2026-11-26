@@ -3,7 +3,7 @@ Contributors: lassejellum
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.3.0
+Stable tag: 2.4.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,77 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 4. Edit an attribute term to access its rich content page
 
 == Changelog ==
+
+= 2.4.0 – 2026-11-26 =
+
+**Added**
+* Flags for Venezuela, Tanzania, Belize, Ecuador, Colombia, Guatemala, Vietnam and Brasil (`assets/flags/<slug>.svg`,
+  from Wikimedia Commons, public domain), beside Peru and Nicaragua (#11).
+* Origins (kaupang-attribute-suite#7, design: kaupang-docs `kaupang-attribute-suite/origins-architecture-2026-11-20.md`):
+  * Status per origin, derived: `active` (≥ 1 active product), `former` (none, sold before) or `unsold`.
+    `kaupang_attribute_suite_origin_status($slug)` returns it with `first_sold`/`last_sold`, from one aggregate over
+    order line meta `pa_opprinnelse` (HPOS or posts, paid statuses), cached 24 h; it is on the origin struct as
+    `status`. A renamed `pa_opprinnelse` term records its old slug in term meta `previous_slugs`, which the aggregate
+    folds in (staging was backfilled by hand: `kokoakamili`, `peru-amazonas-laguna`).
+  * One canonical URL: the term archive `/opprinnelse/<slug>/` (paged and filtered too) 301s to the origin's
+    published page, or to `/opprinnelser/` for a former origin without one.
+  * `/opprinnelser/` is built from the terms: «I sortimentet» (every active origin as a card, a plain card when it has
+    no page) and «Tidligere» (former origins with the period sold, newest first). Unsold origins don't show. Its
+    title is «Opprinnelser».
+  * Origin page: new action `origin_single_before_content` between the header and the blocks, where the suite renders
+    a product strip (image, name, «fra» price, link preselecting the origin) or, for a former origin, «Ikke i
+    sortimentet nå · solgt <periode>».
+  * Page cache: a change that moves an origin's count, or publishing/unpublishing its page, purges its page, term
+    archive and `/opprinnelser/` at shutdown (Nginx Helper; action `purge_origin_urls` for others).
+* Origin modal on Mix and Match products (2026-11-20): a row whose child is a `pa_opprinnelse` variation with an
+  attribute page opens the same origin modal from its "Lær mer" instead of leaving the page. The link carries
+  `data-open-origin-modal` + `data-origin-slug`; the page's origins ship as `wcRasOriginModal.origins`; the strip,
+  arrows and swipe step through them without a variations form (`openOrigin()` in `origin-modal.js`). Rows whose
+  origin has no page keep the plain link. The modal loads on MnM product pages only when such a row exists.
+
+**Changed**
+* Origin product counts leave catalog-hidden products out (Lasse 2026-11-20), and the count and the strip read one
+  cached ID list (`kaupang_attribute_suite_origin_product_ids()`, cache key `origin_active_product_ids_*`).
+
+**Fixed**
+* `/opprinnelser/land/<country>/` routes to the `origin_country` archive instead of 301-ing to an origin page
+  (kaupang-attribute-suite#6): the taxonomies register before the CPT, so the CPT's attachment catch-all no longer
+  sorts ahead of them. Takes effect at the next rewrite flush (version bump, then a wp-admin page load).
+* The origin card's producer icon has a size (it filled the card).
+* The origin modal's strip offers only origins the variations form can select. A variation whose origin the parent
+  product doesn't list among its `pa_opprinnelse` terms (Myrvann Cacao's Belize, 2026-11-20) put a tile in the strip
+  that Woo's select has no option for; clicking it blanked the selection and left an empty card under the previous
+  origin's title. The select path also refuses a value it doesn't offer.
+
+**Changed**
+* Editorial flow (2026-11-05, dc83dc9): the origin single renders inside `<main id="content" class="content">`,
+  the same page parent as the theme's `page.php`. The theme's content-parent rules (width, block-gap rhythm)
+  now reach attribute pages, and the skip link to `#content` resolves (it pointed nowhere before). Visually
+  neutral on peru-qori-inti until its page CSS compensation is removed.
+* Loading precision (docs/loading, attribute-suite#2): a guest page that renders nothing of ours loads the main file,
+  `includes/core.php` and the catalogue (was 18 includes). CPT/taxonomy/meta registration, the block pattern, rewrite
+  rules and cache invalidation moved into `core.php` (every context); everything else is a module loaded where it is
+  used: variable product pages, attribute term archives, origin pages and `/01/` URLs at `wp`; variation data
+  (`woocommerce_available_variation`, threshold, Mix and Match, option lists) through lazy hooks in any context
+  (wc-ajax, quick views, REST, CLI); admin files on wp-admin screens and for logged-in admin-ajax only.
+* Storefront JS is deferred, and inline description, gallery transition and variation display load on variable
+  products only (were on every product page). The origin modal ships a 2 KB opener; `origin-modal.js` (now an ES
+  module) and the radar are imported on the first open. `wc-ras-origin-radar` is no longer registered on every page.
+* The rewrite-version check runs on `admin_init` instead of every request's `wp_loaded`: a version bump takes effect on
+  the next wp-admin page load. `kaupang_attribute_suite_rewrite_version` moves off autoload there; option writes set
+  autoload explicitly.
+* The starter block pattern reads its markup from `includes/origin/pattern-origin-starter.php` (`filePath`) only when
+  the editor asks for it.
+
+**Added**
+* Opt-in origin schema (attribute-suite#3): with `kaupang/attribute-suite/enable_origin_schema` on, the product's
+  JSON-LD Product node gets `countryOfOrigin` from its offered origins' attribute pages (`origin_country`), via
+  `woocommerce_structured_data_product` and Rank Math's `rank_math/snippet/rich_snippet_product_entity`. Only when
+  every offered origin resolves to a country; on a variation URL Woo's node gets only the selected variation's origin
+  (Rank Math's parent entity keeps the full set); an existing `countryOfOrigin` is kept. Check:
+  `tools/check-origin-schema.php`.
+* `tools/check.php` (loading, registration, cross-context hooks, admin foreign-screen rule, storefront budget) and
+  `tools/load-budget.php`; README "Load map".
 
 = 2.3.0 – 2026-10-08 =
 

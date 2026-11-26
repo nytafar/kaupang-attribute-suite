@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-26
+
 ### Added
 - Flags for Venezuela, Tanzania, Belize, Ecuador, Colombia, Guatemala, Vietnam and Brasil (`assets/flags/<slug>.svg`,
   from Wikimedia Commons, public domain), beside Peru and Nicaragua (#11).

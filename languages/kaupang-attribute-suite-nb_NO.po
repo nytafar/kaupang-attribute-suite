@@ -15,15 +15,15 @@ msgstr ""
 "X-Domain: kaupang-attribute-suite\n"
 "X-Loco-Version: 2.7.2; wp-42\n"
 
-#: includes/cpt-attribute-page.php:21
+#: includes/core.php:288
 msgid "Add New"
 msgstr "Legg til ny"
 
-#: includes/cpt-attribute-page.php:22
+#: includes/core.php:289
 msgid "Add New Attribute Page"
 msgstr "Legg til ny attributtside"
 
-#: includes/cpt-attribute-page.php:20
+#: includes/core.php:287
 msgctxt "Add New on Toolbar"
 msgid "Attribute Page"
 msgstr "Attributtside"
@@ -44,7 +44,7 @@ msgstr "Attributttype"
 msgid "Create Rich Content Page"
 msgstr "Lag en side med rikt innhold"
 
-#: includes/cpt-attribute-page.php:24
+#: includes/core.php:291
 msgid "Edit Attribute Page"
 msgstr "Rediger attributtside"
 
@@ -56,21 +56,21 @@ msgstr "Rediger rikt innhold"
 msgid "Edit the rich content page for this attribute term using the block editor."
 msgstr "Rediger siden med rikt innhold for denne attributtermen ved hjelp av blokkredigereren."
 
-#: includes/variation-improvements.php:233
-#: includes/variation-improvements.php:240
-#: includes/variation-improvements.php:255
+#: includes/variation-improvements.php:239
+#: includes/variation-improvements.php:246
+#: includes/variation-improvements.php:261
 msgid "Learn more"
 msgstr "Lær mer"
 
-#: includes/cpt-attribute-page.php:23
+#: includes/core.php:290
 msgid "New Attribute Page"
 msgstr "Ny attributtside"
 
-#: includes/cpt-attribute-page.php:30
+#: includes/core.php:297
 msgid "No attribute pages found in Trash."
 msgstr "Ingen attributtsider funnet i papirkurven."
 
-#: includes/cpt-attribute-page.php:29
+#: includes/core.php:296
 msgid "No attribute pages found."
 msgstr "Ingen attributtsider funnet."
 
@@ -78,36 +78,36 @@ msgstr "Ingen attributtsider funnet."
 msgid "No rich content page exists for this attribute term. Click to create one."
 msgstr "Det finnes ingen innholdsrik side for dette attributtermen. Klikk for å opprette en."
 
-#: includes/cpt-attribute-page.php:31
+#: includes/core.php:298
 msgctxt "Overrides the \"Featured Image\" phrase"
 msgid "Attribute Image"
 msgstr "Attributtbilde"
 
-#: includes/cpt-attribute-page.php:33
+#: includes/core.php:300
 msgctxt "Overrides the \"Remove featured image\" phrase"
 msgid "Remove attribute image"
 msgstr "Fjern attributtbilde"
 
-#: includes/cpt-attribute-page.php:32
+#: includes/core.php:299
 msgctxt "Overrides the \"Set featured image\" phrase"
 msgid "Set attribute image"
 msgstr "Angi attributtbilde"
 
-#: includes/cpt-attribute-page.php:34
+#: includes/core.php:301
 msgctxt "Overrides the \"Use as featured image\" phrase"
 msgid "Use as attribute image"
 msgstr "Bruk som attributtbilde"
 
-#: includes/cpt-attribute-page.php:28
+#: includes/core.php:295
 msgid "Parent Attribute Pages:"
 msgstr "Overordnede attributtsider:"
 
-#: includes/cpt-attribute-page.php:17
+#: includes/core.php:284
 msgctxt "Post type general name"
 msgid "Attribute Pages"
 msgstr "Attributtsider"
 
-#: includes/cpt-attribute-page.php:18
+#: includes/core.php:285
 msgctxt "Post type singular name"
 msgid "Attribute Page"
 msgstr "Attributtside"
@@ -118,7 +118,7 @@ msgstr "Attributtside"
 msgid "Region"
 msgstr "Region"
 
-#: includes/cpt-attribute-page.php:115
+#: includes/core.php:335
 msgid "Region information for the attribute"
 msgstr "Regioninformasjon for attributtet"
 
@@ -128,7 +128,7 @@ msgstr "Regioninformasjon for attributtet"
 msgid "Rich Content"
 msgstr "Rikt innhold"
 
-#: includes/cpt-attribute-page.php:27
+#: includes/core.php:294
 msgid "Search Attribute Pages"
 msgstr "Søk etter attributtsider"
 
@@ -137,7 +137,7 @@ msgstr "Søk etter attributtsider"
 msgid "Smak"
 msgstr "Smak"
 
-#: includes/cpt-attribute-page.php:124
+#: includes/core.php:344
 msgid "Taste profile for the attribute"
 msgstr "Smaksprofil for attributtet"
 
@@ -149,13 +149,13 @@ msgstr "Regionen for dette attributtet (f.eks. geografisk plassering)"
 msgid "The taste profile for this attribute"
 msgstr "Smaksprofilen for denne egenskapen"
 
-#: includes/cpt-attribute-page.php:25
+#: includes/core.php:292
 msgid "View Attribute Page"
 msgstr "Vis attributtside"
 
 #. Plugin Name of the plugin
 #: kaupang-attribute-suite.php
-#: includes/origin/block-patterns.php:25
+#: includes/core.php:1126
 msgid "Kaupang Attribute Suite"
 msgstr ""
 
@@ -199,53 +199,53 @@ msgstr ""
 msgid "Description"
 msgstr ""
 
-#: includes/cpt-attribute-page.php:19
+#: includes/core.php:286
 msgctxt "Admin Menu text"
 msgid "Attribute Suite"
 msgstr ""
 
-#: includes/cpt-attribute-page.php:26
+#: includes/core.php:293
 msgid "All Pages"
 msgstr ""
 
 #. translators: %d: number of producers
-#: includes/frontend-hooks.php:239
-#: templates/single-attribute_page.php:122
+#: includes/frontend-hooks.php:171
+#: templates/single-attribute_page.php:128
 #, php-format
 msgid "%d produsent"
 msgid_plural "%d produsenter"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/origin/block-patterns.php:30
+#: includes/core.php:1129
 msgid "Opprinnelse — 3-kolonne-start"
 msgstr ""
 
-#: includes/origin/block-patterns.php:31
+#: includes/core.php:1130
 msgid "Startmal for opprinnelsesside: produsenter, sted, håndverk. Rediger fritt."
 msgstr ""
 
-#: includes/origin/block-patterns.php:48
+#: includes/origin/pattern-origin-starter.php:13
 msgid "Produsentene"
 msgstr ""
 
-#: includes/origin/block-patterns.php:49
+#: includes/origin/pattern-origin-starter.php:14
 msgid "Stedet"
 msgstr ""
 
-#: includes/origin/block-patterns.php:50
+#: includes/origin/pattern-origin-starter.php:15
 msgid "Håndverket"
 msgstr ""
 
-#: includes/origin/block-patterns.php:52
+#: includes/origin/pattern-origin-starter.php:17
 msgid "Hvem dyrker kakaoen? Kooperativet, familien, den sosiale virksomheten. Skriv om menneskene bak bønnene."
 msgstr ""
 
-#: includes/origin/block-patterns.php:53
+#: includes/origin/pattern-origin-starter.php:18
 msgid "Hvor ligger opprinnelsen? Klima, jordsmonn, landskap, høyde. Det stedet smaken kommer fra."
 msgstr ""
 
-#: includes/origin/block-patterns.php:54
+#: includes/origin/pattern-origin-starter.php:19
 msgid "Hvordan behandles bønnene? Fermentering, tørking, lokal tradisjon. Det som gjør akkurat denne opprinnelsen distinkt."
 msgstr ""
 
@@ -385,219 +385,219 @@ msgstr ""
 msgid "Archive ID"
 msgstr ""
 
+#: includes/core.php:693
 #: includes/origin/origin-admin.php:298
-#: includes/origin/origin-meta.php:122
 msgid "External archive identifier (e.g., Silva GT-047)."
 msgstr ""
 
-#: includes/origin/origin-config.php:27
+#: includes/core.php:524
 msgid "Syre"
 msgstr ""
 
-#: includes/origin/origin-config.php:28
+#: includes/core.php:525
 msgid "Sødme"
 msgstr ""
 
-#: includes/origin/origin-config.php:29
+#: includes/core.php:526
 msgid "Bitter"
 msgstr ""
 
-#: includes/origin/origin-config.php:30
+#: includes/core.php:527
 msgid "Kropp"
 msgstr ""
 
-#: includes/origin/origin-config.php:31
+#: includes/core.php:528
 msgid "Frukt"
 msgstr ""
 
-#: includes/origin/origin-config.php:32
+#: includes/core.php:529
 msgid "Blomst"
 msgstr ""
 
-#: includes/origin/origin-config.php:33
+#: includes/core.php:530
 msgid "Jord"
 msgstr ""
 
-#: includes/origin/origin-config.php:34
+#: includes/core.php:531
 msgid "Krydder"
 msgstr ""
 
-#: includes/origin/origin-config.php:47
+#: includes/core.php:544
 msgid "Single estate"
 msgstr ""
 
-#: includes/origin/origin-config.php:48
+#: includes/core.php:545
 msgid "Family farm"
 msgstr ""
 
-#: includes/origin/origin-config.php:49
+#: includes/core.php:546
 msgid "Cooperative"
 msgstr ""
 
-#: includes/origin/origin-config.php:50
+#: includes/core.php:547
 msgid "Social enterprise"
 msgstr ""
 
-#: includes/origin/origin-config.php:51
+#: includes/core.php:548
 msgid "Smallholders"
 msgstr ""
 
-#: includes/origin/origin-config.php:64
+#: includes/core.php:561
 msgid "Sentralisert"
 msgstr ""
 
-#: includes/origin/origin-config.php:65
+#: includes/core.php:562
 msgid "Desentralisert"
 msgstr ""
 
-#: includes/origin/origin-config.php:66
+#: includes/core.php:563
 msgid "Blandet"
 msgstr ""
 
-#: includes/origin/origin-meta.php:27
+#: includes/core.php:598
 msgid "Cacao variety (e.g., Chuncho, Criollo)."
 msgstr ""
 
-#: includes/origin/origin-meta.php:36
+#: includes/core.php:607
 msgid "Producer organization type."
 msgstr ""
 
-#: includes/origin/origin-meta.php:44
+#: includes/core.php:615
 msgid "Number of producers (nullable)."
 msgstr ""
 
-#: includes/origin/origin-meta.php:53
+#: includes/core.php:624
 msgid "Fermentation organization type."
 msgstr ""
 
-#: includes/origin/origin-meta.php:61
+#: includes/core.php:632
 msgid "Fermentation duration in days (nullable)."
 msgstr ""
 
-#: includes/origin/origin-meta.php:69
+#: includes/core.php:640
 msgid "Free-text fermentation method description."
 msgstr ""
 
-#: includes/origin/origin-meta.php:77
+#: includes/core.php:648
 msgid "Free-text drying method description."
 msgstr ""
 
-#: includes/origin/origin-meta.php:86
+#: includes/core.php:657
 msgid "8-axis taste profile, values 0–10 per axis."
 msgstr ""
 
-#: includes/origin/origin-meta.php:104
+#: includes/core.php:675
 msgid "Altitude range {min, max, unit}."
 msgstr ""
 
-#: includes/origin/origin-render.php:255
+#: includes/origin/origin-render.php:235
 #, php-format
 msgid "%d dag"
 msgid_plural "%d dager"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/origin/origin-taxonomies.php:23
+#: includes/core.php:830
 msgctxt "Taxonomy general name"
 msgid "Countries"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:24
+#: includes/core.php:831
 msgctxt "Taxonomy singular name"
 msgid "Country"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:25
+#: includes/core.php:832
 msgid "Countries"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:26
+#: includes/core.php:833
 msgid "All countries"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:27
+#: includes/core.php:834
 msgid "Edit country"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:28
+#: includes/core.php:835
 msgid "View country"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:29
+#: includes/core.php:836
 msgid "Update country"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:30
+#: includes/core.php:837
 msgid "Add new country"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:31
+#: includes/core.php:838
 msgid "New country name"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:32
+#: includes/core.php:839
 msgid "Search countries"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:33
+#: includes/core.php:840
 msgid "No countries found."
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:50
+#: includes/core.php:857
 msgctxt "Taxonomy general name"
 msgid "Certifications"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:51
+#: includes/core.php:858
 msgctxt "Taxonomy singular name"
 msgid "Certification"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:52
+#: includes/core.php:859
 msgid "Certifications"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:53
+#: includes/core.php:860
 msgid "All certifications"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:54
+#: includes/core.php:861
 msgid "Edit certification"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:55
+#: includes/core.php:862
 msgid "View certification"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:56
+#: includes/core.php:863
 msgid "Update certification"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:57
+#: includes/core.php:864
 msgid "Add new certification"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:58
+#: includes/core.php:865
 msgid "New certification name"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:59
+#: includes/core.php:866
 msgid "Search certifications"
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:60
+#: includes/core.php:867
 msgid "No certifications found."
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:77
+#: includes/core.php:884
 msgid "Attachment ID of the certification icon SVG."
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:85
+#: includes/core.php:892
 msgid "Full/official certification name."
 msgstr ""
 
-#: includes/origin/origin-taxonomies.php:93
+#: includes/core.php:900
 msgid "External URL (certification body or programme page)."
 msgstr ""
 
@@ -606,20 +606,14 @@ msgstr ""
 msgid "Lær mer"
 msgstr ""
 
-#: templates/archive-attribute_page.php:40
-msgid "Forrige"
-msgstr ""
-
-#: templates/archive-attribute_page.php:41
-msgid "Neste"
-msgstr ""
-
-#: templates/archive-attribute_page.php:46
+#: templates/archive-attribute_page.php:83
 msgid "Ingen opprinnelser publisert enda."
 msgstr ""
 
 #. translators: %d: number of chocolates/products using this origin
+#: templates/parts/origin-card-plain.php:34
 #: templates/parts/origin-card.php:93
+#: templates/parts/origin-products.php:46
 #, php-format
 msgid "Brukes i %d sjokolade"
 msgid_plural "Brukes i %d sjokolader"
@@ -644,12 +638,12 @@ msgid "Produsenter"
 msgstr ""
 
 #: templates/parts/origin-modal.php:148
-#: templates/single-attribute_page.php:146
+#: templates/single-attribute_page.php:152
 msgid "Fermentering"
 msgstr ""
 
 #: templates/parts/origin-modal.php:156
-#: templates/single-attribute_page.php:152
+#: templates/single-attribute_page.php:158
 msgid "Tørking"
 msgstr ""
 
@@ -661,44 +655,79 @@ msgstr ""
 msgid "Se hele siden →"
 msgstr ""
 
+#: includes/origin/origin-frontend.php:426
 #: templates/parts/origin-modal.php:193
 msgid "Opprinnelser"
 msgstr ""
 
-#: templates/single-attribute_page.php:108
+#: templates/single-attribute_page.php:114
 msgid "Produsenter og dyrking"
 msgstr ""
 
-#: templates/single-attribute_page.php:131
+#: templates/single-attribute_page.php:137
 msgid "Varietet:"
 msgstr ""
 
-#: templates/single-attribute_page.php:160
+#: templates/single-attribute_page.php:166
 msgid "Etter innhøsting"
 msgstr ""
 
-#: templates/single-attribute_page.php:181
+#: templates/single-attribute_page.php:187
 msgid "Smaksnotater"
 msgstr ""
 
-#: includes/archived-variations.php:408
+#: includes/archived-variations.php:414
 msgid "Aktivert"
 msgstr ""
 
-#: includes/archived-variations.php:409
+#: includes/archived-variations.php:415
 msgid "Arkivert"
 msgstr ""
 
 #. translators: %d: number of archived (disabled) variations
-#: includes/archived-variations.php:423
-#: includes/archived-variations.php:529
+#: includes/archived-variations.php:429
+#: includes/archived-variations.php:535
 #, php-format
 msgid "Skjul arkiverte (%d)"
 msgstr ""
 
 #. translators: %d: number of archived (disabled) variations
-#: includes/archived-variations.php:425
-#: includes/archived-variations.php:527
+#: includes/archived-variations.php:431
+#: includes/archived-variations.php:533
 #, php-format
 msgid "Vis arkiverte (%d)"
+msgstr ""
+
+#: includes/core.php:1071
+msgid "Slugs this origin had before (order lines keep the old one)."
+msgstr ""
+
+#. translators: %s: lowest price
+#: includes/origin/origin-frontend.php:377
+#, php-format
+msgid "fra %s"
+msgstr ""
+
+#. translators: month + year in a sold period, PHP date format
+#: includes/origin/origin-status.php:165
+msgctxt "sold period month"
+msgid "M Y"
+msgstr ""
+
+#: templates/archive-attribute_page.php:37
+msgid "I sortimentet"
+msgstr ""
+
+#: templates/archive-attribute_page.php:55
+msgid "Tidligere"
+msgstr ""
+
+#. translators: %s: period the origin was sold, e.g. "jul 2025 – feb 2026"
+#: templates/parts/origin-products.php:28
+#, php-format
+msgid "Ikke i sortimentet nå · solgt %s"
+msgstr ""
+
+#: templates/parts/origin-products.php:29
+msgid "Ikke i sortimentet nå"
 msgstr ""
