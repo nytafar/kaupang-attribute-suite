@@ -3,7 +3,7 @@ Contributors: lassejellum
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.4.1
+Stable tag: 2.4.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,11 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 4. Edit an attribute term to access its rich content page
 
 == Changelog ==
+
+= 2.4.2 – 2026-11-27 =
+
+**Fixed**
+* Variation image transition: the ghost that fades out shows the file on screen (`currentSrc`), with no `srcset` to choose from again. When the image sits in `<picture>` (Ousia 2.1.0's AVIF, ousia#42) the clone had no `<source>` and fetched the JPEG twin of the AVIF on screen, on every product page load with a default variation.
 
 = 2.4.1 – 2026-11-26 =
 

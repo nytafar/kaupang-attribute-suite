@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.2] - 2026-11-27
+
 ### Fixed
 - Variation image transition: the ghost that fades out shows the file on screen (`currentSrc`), with no `srcset` to choose from again. When the image sits in `<picture>` (Ousia 2.1.0's AVIF, ousia#42) the clone had no `<source>` and fetched the JPEG twin of the AVIF on screen, on every product page load with a default variation.
 
