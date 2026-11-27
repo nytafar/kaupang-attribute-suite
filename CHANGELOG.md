@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- The variation crossfade no longer runs when the chosen variation's image is the one already showing, which it did on every page load (the page opens on its default variation): it compared the file the browser picked from `srcset` with the variation's `src`, and they never match.
+- The crossfade's ghost is drawn like the image it copies (`object-fit`, `object-position`) and lands on it when a theme rule moves gallery images with a transform, so a gallery that crops its images does not flash the uncropped picture.
+
 ### Security
 - The checks under `tools/` and `tools/load-budget.php` open with `PHP_SAPI === 'cli' || exit;`, so a web request to one runs nothing (kaupang-docs#41).
 

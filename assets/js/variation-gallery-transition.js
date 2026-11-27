@@ -103,10 +103,29 @@
         ghost.style.width = imageRect.width + 'px';
         ghost.style.height = imageRect.height + 'px';
 
+        // The ghost is the image as it is drawn: a gallery that crops its
+        // images (object-fit: cover in a fixed stage) would otherwise get a
+        // ghost of the whole picture, smaller, on top of the cropped one.
+        const drawn = window.getComputedStyle(image);
+        ghost.style.objectFit = drawn.objectFit;
+        ghost.style.objectPosition = drawn.objectPosition;
+
         frame.querySelectorAll('.wc-ras-variation-image-ghost').forEach(function (stale) {
             stale.remove();
         });
         frame.appendChild(ghost);
+
+        // A theme rule for the gallery's images reaches the ghost too (Ousia
+        // moves a stacked image sideways with a transform). Its place was
+        // measured with that already applied, so it would be applied twice:
+        // put the ghost back on the image by what it is off.
+        const ghostRect = ghost.getBoundingClientRect();
+        const offX = ghostRect.left - imageRect.left;
+        const offY = ghostRect.top - imageRect.top;
+        if (Math.abs(offX) > 0.01 || Math.abs(offY) > 0.01) {
+            ghost.style.left = (imageRect.left - frameRect.left - offX) + 'px';
+            ghost.style.top = (imageRect.top - frameRect.top - offY) + 'px';
+        }
         return ghost;
     }
 
@@ -144,9 +163,15 @@
         const image = findMainImage(frame);
         if (!container || !frame || !image) { return; }
 
-        const currentUrl = normalizeUrl(image.currentSrc || image.src);
+        // Nothing to fade when the variation's image is the one showing: the
+        // page opens on its default variation, whose image is already there.
+        // The src attribute says which image it is; currentSrc is the file the
+        // browser chose from srcset (another width, or the AVIF twin), which
+        // never equals the variation's src.
         const targetUrl = normalizeUrl(variationImage.src);
-        if (currentUrl && targetUrl && currentUrl === targetUrl) {
+        const shownUrl = normalizeUrl(image.getAttribute('src'));
+        const currentUrl = normalizeUrl(image.currentSrc || image.src);
+        if (targetUrl && (shownUrl === targetUrl || currentUrl === targetUrl)) {
             return;
         }
 
