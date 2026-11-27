@@ -3,7 +3,7 @@ Contributors: lassejellum
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.4.2
+Stable tag: 2.4.3
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,15 @@ Kaupang Attribute Suite transforms standard attribute taxonomy pages into rich c
 4. Edit an attribute term to access its rich content page
 
 == Changelog ==
+
+= 2.4.3 – 2026-11-27 =
+
+**Fixed**
+* The variation crossfade no longer runs when the chosen variation's image is the one already showing, which it did on every page load (the page opens on its default variation): it compared the file the browser picked from `srcset` with the variation's `src`, and they never match.
+* The crossfade's ghost is drawn like the image it copies (`object-fit`, `object-position`) and lands on it when a theme rule moves gallery images with a transform, so a gallery that crops its images does not flash the uncropped picture.
+
+**Security**
+* The checks under `tools/` and `tools/load-budget.php` open with `PHP_SAPI === 'cli' || exit;`, so a web request to one runs nothing (kaupang-docs#41).
 
 = 2.4.2 – 2026-11-27 =
 
