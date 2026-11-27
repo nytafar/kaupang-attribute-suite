@@ -83,7 +83,16 @@
             return null;
         }
 
+        // The ghost shows the file on screen, as it is: currentSrc, no srcset to
+        // choose from again. A clone with the srcset would fetch a new file when
+        // the img sits in <picture> (Ousia's AVIF, ousia#42): the clone has no
+        // <source>, so it picks the JPEG twin of what is showing.
         const ghost = image.cloneNode(false);
+        if (image.currentSrc) {
+            ghost.removeAttribute('srcset');
+            ghost.removeAttribute('sizes');
+            ghost.setAttribute('src', image.currentSrc);
+        }
         ghost.removeAttribute('id');
         ghost.removeAttribute('loading');
         ghost.removeAttribute('decoding');
