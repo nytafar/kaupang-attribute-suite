@@ -2,6 +2,9 @@
 // Read by `wp kaupang-assets audit --budget`. Unlisted page types fall back to '*', then to the default (2 files, nothing else).
 // Every page: main file, includes/core.php (CPT/taxonomy/meta registration, cache invalidation, gates) and the nb_NO
 // catalogue, which the CPT and taxonomy labels translated on init load. See README "Load map" for the rest.
+
+PHP_SAPI === 'cli' || exit; // read by `wp kaupang-assets audit`, never a web page (conventions.md: tests and tools)
+
 $variation_template = 4; // + templates/variation-no-description.php: Woo prints its variation JS template wherever
                          // `wc-add-to-cart-variation` is enqueued (by a third party on these pages), and the suite swaps it.
 // Origin schema (opt-in, read here inside WP after the theme loads): + includes/origin/origin-schema.php on product pages.

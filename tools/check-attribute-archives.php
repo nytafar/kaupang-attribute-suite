@@ -6,6 +6,8 @@
  * Pair with tools/check-archived-variations.php (staging) for the archived-variations feature.
  */
 
+PHP_SAPI === 'cli' || exit; // a check, never a web page (conventions.md: tests and tools)
+
 $fail  = 0;
 $check = function ($ok, $msg) use (&$fail) {
     echo ($ok ? 'ok   ' : 'FAIL ') . $msg . "\n";

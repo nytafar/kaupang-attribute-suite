@@ -6,6 +6,8 @@
  * Run: gp wp <site> eval-file wp-content/plugins/kaupang-attribute-suite/tools/check-archived-variations.php
  */
 
+PHP_SAPI === 'cli' || exit; // a check, never a web page (conventions.md: tests and tools)
+
 $fail  = 0;
 $check = function ($ok, $msg) use (&$fail) {
     echo ($ok ? 'ok   ' : 'FAIL ') . $msg . "\n";

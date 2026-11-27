@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- The checks under `tools/` and `tools/load-budget.php` open with `PHP_SAPI === 'cli' || exit;`, so a web request to one runs nothing (kaupang-docs#41).
+
 ## [2.4.2] - 2026-11-27
 
 ### Fixed
